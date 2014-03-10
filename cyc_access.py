@@ -93,7 +93,8 @@ def reaction_meta_stoich(org, reaction):
     compartment = metabolite_compartment(org, reaction, reactant, "left")
     formula = metabolite_formula(org, reactant)
     name = metabolite_name(org, reactant)
-    metabolite = Metabolite(str(reactant), formula, name, compartment)
+    abbr = str(reactant)+"_"+compartment
+    metabolite = Metabolite(abbr, formula, name, compartment)
     meta_stoich_dic[metabolite] = -int(stoich) # negative because reactant is consumed
   products = org.reaction_reactants_and_products(reaction)[1]
   for product in products:
@@ -102,7 +103,8 @@ def reaction_meta_stoich(org, reaction):
     compartment = metabolite_compartment(org, reaction, product, "right")
     formula = metabolite_formula(org, product)
     name = metabolite_name(org, product)
-    metabolite = Metabolite(str(product), formula, name, compartment)
+    abbr = str(product)+"_"+compartment
+    metabolite = Metabolite(abbr, formula, name, compartment)
     meta_stoich_dic[metabolite] = int(stoich)
   return meta_stoich_dic
 
