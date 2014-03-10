@@ -1,5 +1,6 @@
 import re
 from cobra import Model, Reaction, Metabolite
+import itertools
 
 
 def test():
@@ -156,4 +157,80 @@ def reaction_gene_reaction_rule(org, reaction):
       
   gpr   = re.sub("[\[\]]", "", gpr) # remove [ ] brackets
   return "("+gpr+")"
+
+
+def reaction_is_generic(org, reaction):
+  """Returns True if a reaction contains at least one generic/unspecific metabolite"""
+  all_metabolites = org.reaction_reactants_and_products(reaction)[0] + org.reaction_reactants_and_products(reaction)[1]
+  for metabolite in all_metabolites:
+    if org.is_class(metabolite):
+      return True
+  return False
+
+
+def find_specific(org, generic_metabolite):
+  """Returns a set of names of specific metabolites given a generic one
+  generic metabolites are classes (eg. fatty acids) which should be avoided because they are ambiguous"""
+  specified = set()
+  if org.is_class(generic_metabolite): # if it's a class
+    if hasattr(org.get_class_all_instances(generic_metabolite), '__iter__'): # if this class has instances
+      for c in org.get_class_all_instances(generic_metabolite):
+        specified.add(str(c).replace("|",""))
+    if org.get_class_all_subs(generic_metabolite) != None: # if this class has subclases
+      for sub in org.get_class_all_subs(generic_metabolite):
+        specified = specified | find_specific(org, sub)
+  return specified
+
+
+def dic_replace(dic, old, new):
+  """Returns a dictionary in which old key is exchanged with new key"""
+  dic_new = {}
+  for member in dic:
+    if member == old: dic_new[new] = dic[old]
+    else: dic_new[member] = dic[member]
+  return dic_new
+
+
+def reaction_generic_specified(org, reaction, org_reaction):
+  specified_reactions     = []  # list of new specified reactions
+  all_metabolites         = org.reaction_reactants_and_products(reaction)[0] + org.reaction_reactants_and_products(reaction)[1]
+  generics_substitutions  = {}  # dictionary which contains a list with specific metabolites for each generic one
+  list_generics           = []  # list of generic metabolite 
+  multilist_specifics     = []  # list containing a list for every generic metabolite containing its specific metabolites
+  meta_stoich             = reaction_meta_stoich(org, reaction)
+  for metabolite in all_metabolites:
+    if org.is_class(metabolite):
+      specifics = find_specific(org, metabolite)
+      generics_substitutions[str(metabolite)] = specifics 
+      list_generics.append(metabolite)
+      multilist_specifics.append(specifics)
+ 
+  tmp = {value: len(generics_substitutions[value]) for value in generics_substitutions if len(generics_substitutions[value]) > 1} # only abstract metabolites with more than 1 specifification
+  print len(generics_substitutions)
+  if len(tmp) > 1: # some kind of problem
+    print org_reaction.reaction
+  combinations = itertools.product(*multilist_specifics)  # all combinations of specifications in a reaction (k-combination, no order, without replacement)
+  nr = 0
+  for combination in combinations:
+    nr += 1
+    for index, generic in enumerate(list_generics):
+      specific = combination[index]
+      new_meta_stoich = dic_replace(meta_stoich, generic, specific)
+      
+      reaction_new = Reaction(org_reaction.id + "_" + str(nr))
+      
+      reaction_new.name                   = org_reaction.name
+      reaction_new.subsystem              = org_reaction.subsystem 
+      reaction_new.lower_bound            = org_reaction.lower_bound
+      reaction_new.upper_bound            = org_reaction.upper_bound
+      reaction_new.objective_coefficient  = org_reaction.objective_coefficient
+      reaction_new.reversibility          = org_reaction.reversibility
+      reaction_new.add_metabolites(new_meta_stoich)
+      reaction_new.add_gene_reaction_rule(org_reaction.gene_reaction_rule)
+      
+      specified_reactions.append(reaction_new)
+
+    #print combination
+  
+  return specified_reactions
 
