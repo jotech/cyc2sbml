@@ -1,6 +1,10 @@
 import re
 from cobra import Model, Reaction, Metabolite
 import itertools
+import copy
+
+compartment_dic = {"CCO-IN":"c", "CCO-EXTRACELLULAR":"e", "CCO-CYTOSOL":"c", "CCO-PERI-BAC":"p", "CCO-OUT":"e"}
+
 
 
 def test():
@@ -9,7 +13,16 @@ def test():
 
 def reaction_name(org, reaction):
   """Returns the full name of a reaction"""
-  return org.get_name_string(reaction)
+  name = reaction.common_name
+  if name == None: name = reaction.systematic_name
+  if name == None:
+    enzyme = reaction.enzymatic_reaction
+    if isinstance(enzyme, list):
+      name = enzyme[0].common_name 
+    elif enzyme != None:
+      name = enzyme.common_name 
+  if name == None: name = str(reaction)
+  return no_style(name)
 
 
 def reaction_subsystem(org, reaction):
@@ -28,6 +41,11 @@ def no_style(string):
   string = string.replace("<sub>", "").replace("<SUB>", "").replace("<sup>", "").replace("<SUP>", "")
   string = string.replace("<i>", "").replace("<SUB>", "").replace("<sup>", "").replace("<SUP>", "")
   return string
+
+
+def id_cleaner(string):
+  """Returns a string without -.+ (special charakters in ptools)"""
+  return string.replace(".","").replace("-","").replace("+","").replace("|","")
 
 
 def reaction_pathways(org, reaction):
@@ -52,7 +70,7 @@ def reaction_pathways(org, reaction):
 
 def metabolite_name(org, metabolite):
   """Returns full name of a metabolite"""
-  return org.get_name_string(metabolite)
+  return no_style(org.get_name_string(metabolite))
 
 
 def metabolite_formula(org, metabolite):
@@ -72,16 +90,24 @@ def metabolite_compartment(org, reaction, metabolite, side):
   #sm.transporter(reaction) is not working allways!!
   compartments = org.compartments_of_reaction(reaction)
   if len(compartments) == 1:  # <=> is not a transporter
-    return compartments[0]
+    return compartment_dic[str(compartments[0])]
   else:                       # <=> is a transporter
     val = org.get_value_annot(reaction, side, metabolite, "compartment") 
     if val == None: # sadly happens sometimes...
       print "database has no compartment info for", metabolite, "in reaction", reaction
       comp = "CCO-IN" # assuming cytosol
       print "... assuming", comp
-      return comp
+      return compartment_dic[comp]
     else:
-      return str(val)
+      return compartment_dic[str(val)]
+
+
+def is_number(s):
+  try:
+    float(s)
+    return True
+  except ValueError:
+    return False
 
 
 def reaction_meta_stoich(org, reaction):
@@ -94,9 +120,12 @@ def reaction_meta_stoich(org, reaction):
     compartment = metabolite_compartment(org, reaction, reactant, "left")
     formula = metabolite_formula(org, reactant)
     name = metabolite_name(org, reactant)
-    abbr = str(reactant)+"_"+compartment
+    abbr = id_cleaner(str(reactant)+"_"+compartment)
     metabolite = Metabolite(abbr, formula, name, compartment)
-    meta_stoich_dic[metabolite] = -int(stoich) # negative because reactant is consumed
+    if is_number(stoich):
+      meta_stoich_dic[metabolite] = -int(stoich) # negative because reactant is consumed
+    else:
+      meta_stoich_dic[metabolite] = stoich
   products = org.reaction_reactants_and_products(reaction)[1]
   for product in products:
     stoich = org.get_value_annot(reaction, "right", product, "coefficient") # stoichiometry
@@ -104,9 +133,12 @@ def reaction_meta_stoich(org, reaction):
     compartment = metabolite_compartment(org, reaction, product, "right")
     formula = metabolite_formula(org, product)
     name = metabolite_name(org, product)
-    abbr = str(product)+"_"+compartment
+    abbr = id_cleaner(str(product)+"_"+compartment)
     metabolite = Metabolite(abbr, formula, name, compartment)
-    meta_stoich_dic[metabolite] = int(stoich)
+    if is_number(stoich): 
+      meta_stoich_dic[metabolite] = int(stoich)
+    else:
+      meta_stoich_dic[metabolite] = stoich
   return meta_stoich_dic
 
 
@@ -156,7 +188,8 @@ def reaction_gene_reaction_rule(org, reaction):
       gpr   = str(org.genes_of_protein(re_enzymes)[0])
       
   gpr   = re.sub("[\[\]]", "", gpr) # remove [ ] brackets
-  return "("+gpr+")"
+  #return "("+gpr+")"
+  return ("( "+gpr+" )").replace("-","")
 
 
 def reaction_is_generic(org, reaction):
@@ -169,26 +202,37 @@ def reaction_is_generic(org, reaction):
 
 
 def find_specific(org, generic_metabolite):
-  """Returns a set of names of specific metabolites given a generic one
+  """Returns a list of specific metabolites given a generic one
   generic metabolites are classes (eg. fatty acids) which should be avoided because they are ambiguous"""
-  specified = set()
+  specified = []
   if org.is_class(generic_metabolite): # if it's a class
     if hasattr(org.get_class_all_instances(generic_metabolite), '__iter__'): # if this class has instances
       for c in org.get_class_all_instances(generic_metabolite):
-        specified.add(str(c).replace("|",""))
+        if c not in specified: specified.append(c)
     if org.get_class_all_subs(generic_metabolite) != None: # if this class has subclases
       for sub in org.get_class_all_subs(generic_metabolite):
-        specified = specified | find_specific(org, sub)
+        for f in find_specific(org, sub):
+          if f not in specified: specified.append(f)
   return specified
 
 
-def dic_replace(dic, old, new):
+def meta_stoich_replace(dic, old, new):
   """Returns a dictionary in which old key is exchanged with new key"""
   dic_new = {}
   for member in dic:
     if member == old: dic_new[new] = dic[old]
     else: dic_new[member] = dic[member]
   return dic_new
+
+
+def metabolite_from_string(setlistdic, string):
+  """Returns an object from class Metabolite if found in a set, list, dic, otherwise None"""
+  for entry in setlistdic:
+    if entry.id == string:
+      return entry
+    if entry.id == string + "_" + entry.compartment: # take care of ids which have a compartment tag
+      return entry
+  return None
 
 
 def reaction_generic_specified(org, reaction, org_reaction):
@@ -199,38 +243,45 @@ def reaction_generic_specified(org, reaction, org_reaction):
   multilist_specifics     = []  # list containing a list for every generic metabolite containing its specific metabolites
   meta_stoich             = reaction_meta_stoich(org, reaction)
   for metabolite in all_metabolites:
-    if org.is_class(metabolite):
+    if org.is_class(metabolite) and metabolite not in list_generics:
       specifics = find_specific(org, metabolite)
       generics_substitutions[str(metabolite)] = specifics 
       list_generics.append(metabolite)
       multilist_specifics.append(specifics)
  
   tmp = {value: len(generics_substitutions[value]) for value in generics_substitutions if len(generics_substitutions[value]) > 1} # only abstract metabolites with more than 1 specifification
-  print len(generics_substitutions)
+  #print len(generics_substitutions)
   if len(tmp) > 1: # some kind of problem
-    print org_reaction.reaction
+    print "Complex reaction:", org_reaction, org_reaction.reaction, "\nnot added!"
+    return []
   combinations = itertools.product(*multilist_specifics)  # all combinations of specifications in a reaction (k-combination, no order, without replacement)
   nr = 0
   for combination in combinations:
     nr += 1
     for index, generic in enumerate(list_generics):
       specific = combination[index]
-      new_meta_stoich = dic_replace(meta_stoich, generic, specific)
-      
-      reaction_new = Reaction(org_reaction.id + "_" + str(nr))
-      
-      reaction_new.name                   = org_reaction.name
-      reaction_new.subsystem              = org_reaction.subsystem 
-      reaction_new.lower_bound            = org_reaction.lower_bound
-      reaction_new.upper_bound            = org_reaction.upper_bound
-      reaction_new.objective_coefficient  = org_reaction.objective_coefficient
-      reaction_new.reversibility          = org_reaction.reversibility
-      reaction_new.add_metabolites(new_meta_stoich)
-      reaction_new.add_gene_reaction_rule(org_reaction.gene_reaction_rule)
-      
-      specified_reactions.append(reaction_new)
+      new_meta_stoich = {}
+      for entry in meta_stoich: # change generic to specific metabolite in reaction list (meta_stoich) and build a new reaction
+        if entry.id[:entry.id.find("_")] == str(generic):
+          generic_metabolite      = entry
+          specific_metabolite     = copy.deepcopy(generic_metabolite)
+          specific_metabolite.id  = specific_metabolite.id.replace(str(generic), str(specific))
+          specific_metabolite.name= metabolite_name(org, specific)
+          new_meta_stoich[specific_metabolite] = meta_stoich[entry]
+        else:
+          new_meta_stoich[entry] = meta_stoich[entry]
+    reaction_new = Reaction(org_reaction.id + "_" + str(nr))
+    reaction_new.name                   = org_reaction.name
+    reaction_new.subsystem              = org_reaction.subsystem 
+    reaction_new.lower_bound            = org_reaction.lower_bound
+    reaction_new.upper_bound            = org_reaction.upper_bound
+    reaction_new.objective_coefficient  = org_reaction.objective_coefficient
+    reaction_new.add_metabolites(new_meta_stoich)
+    reaction_new.gene_reaction_rule     = org_reaction.gene_reaction_rule
+    
+    specified_reactions.append(reaction_new)
 
-    #print combination
+  #print combination
   
   return specified_reactions
 
