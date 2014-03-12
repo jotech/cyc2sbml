@@ -23,8 +23,8 @@ care_generics = True if answer_generic == "y" else False
 
 model = Model(answer_org)
 
-for r in org.all_rxns(":all"):
-#for r in org.all_rxns(":all")[0:1]: # only the first reactions -> debugging
+#for r in org.all_rxns(":all"):
+for r in org.all_rxns(":all")[0:10]: # only the first reactions -> debugging
   reaction                        = Reaction(cyc.id_cleaner(str(r)))
   reaction.name                   = cyc.reaction_name(org, r)
   reaction.subsystem              = cyc.reaction_subsystem(org, r)
@@ -41,9 +41,9 @@ for r in org.all_rxns(":all"):
     specific_reactions = cyc.reaction_generic_specified(org, r, reaction)
     model.add_reactions(specific_reactions)
     print "\nabstract reaction:", reaction, reaction.reaction, "\n\tadded", len(specific_reactions), "specific reactions"
-    #list = cyc.reaction_generic_specified(org, r, reaction)
-    #for l in list:
-    #  print l, l.reaction
+    list = cyc.reaction_generic_specified(org, r, reaction)
+    for l in list:
+      print l, l.reaction
     #import pdb; pdb.set_trace()
   else:
     model.add_reaction(reaction)

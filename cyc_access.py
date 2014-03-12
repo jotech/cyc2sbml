@@ -145,7 +145,7 @@ def reaction_meta_stoich(org, reaction):
 def reaction_reversible(org, reaction):
   """Returns True/False if reaction is reversible or not"""
   dir = reaction.reaction_direction
-  if dir == None: # metacyc has no entry if it's reversible
+  if str(dir).upper == "reversible" or dir == None: # metacyc has no entry if it's reversible...
     return True
   else:
     return False
@@ -245,7 +245,7 @@ def reaction_generic_specified(org, reaction, org_reaction):
   for metabolite in all_metabolites:
     if org.is_class(metabolite) and metabolite not in list_generics:
       specifics = find_specific(org, metabolite)
-      generics_substitutions[str(metabolite)] = specifics 
+      generics_substitutions[str(metabolite).replace("|","")] = specifics # remove "|" which indicates classes
       list_generics.append(metabolite)
       multilist_specifics.append(specifics)
  
@@ -262,10 +262,10 @@ def reaction_generic_specified(org, reaction, org_reaction):
       specific = combination[index]
       new_meta_stoich = {}
       for entry in meta_stoich: # change generic to specific metabolite in reaction list (meta_stoich) and build a new reaction
-        if entry.id[:entry.id.find("_")] == str(generic):
+        if entry.id[:entry.id.find("_")] == str(generic).replace("|",""):
           generic_metabolite      = entry
           specific_metabolite     = copy.deepcopy(generic_metabolite)
-          specific_metabolite.id  = specific_metabolite.id.replace(str(generic), str(specific))
+          specific_metabolite.id  = specific_metabolite.id.replace(str(generic).replace("|",""), str(specific))
           specific_metabolite.name= metabolite_name(org, specific)
           new_meta_stoich[specific_metabolite] = meta_stoich[entry]
         else:
