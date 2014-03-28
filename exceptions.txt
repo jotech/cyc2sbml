@@ -1,0 +1,15 @@
+#
+# This file contains metabolites which sumarize groups of compounds.
+# They will not be specified during cyc2sbml
+#
+R-3-hydroxystearoyl-ACPs
+R-3-Hydroxypalmitoyl-ACPs
+ACYL-ACP
+ACETYL-ACP
+Acetoacetyl-ACPs
+#_19 carbon cyclopropane-ACP (NA in metacyc)
+MALONYL-ACP
+Myristoyl-ACPs
+Stearoyl-ACPs
+Palmitoyl-ACPs
+ACP

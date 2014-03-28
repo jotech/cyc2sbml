@@ -145,7 +145,7 @@ def reaction_meta_stoich(org, reaction):
 def reaction_reversible(org, reaction):
   """Returns True/False if reaction is reversible or not"""
   dir = reaction.reaction_direction
-  if str(dir).upper == "reversible" or dir == None: # metacyc has no entry if it's reversible...
+  if str(dir).lower() == "reversible" or dir == None: # metacyc has no entry if it's reversible...
     return True
   else:
     return False
@@ -192,11 +192,11 @@ def reaction_gene_reaction_rule(org, reaction):
   return ("( "+gpr+" )").replace("-","")
 
 
-def reaction_is_generic(org, reaction):
+def reaction_is_generic(org, reaction, exceptions):
   """Returns True if a reaction contains at least one generic/unspecific metabolite"""
   all_metabolites = org.reaction_reactants_and_products(reaction)[0] + org.reaction_reactants_and_products(reaction)[1]
   for metabolite in all_metabolites:
-    if org.is_class(metabolite):
+    if str(metabolite) not in exceptions and org.is_class(metabolite):
       return True
   return False
 
@@ -235,7 +235,7 @@ def metabolite_from_string(setlistdic, string):
   return None
 
 
-def reaction_generic_specified(org, reaction, org_reaction):
+def reaction_generic_specified(org, reaction, org_reaction, generic_exceptions):
   specified_reactions     = []  # list of new specified reactions
   all_metabolites         = org.reaction_reactants_and_products(reaction)[0] + org.reaction_reactants_and_products(reaction)[1]
   generics_substitutions  = {}  # dictionary which contains a list with specific metabolites for each generic one
@@ -243,7 +243,7 @@ def reaction_generic_specified(org, reaction, org_reaction):
   multilist_specifics     = []  # list containing a list for every generic metabolite containing its specific metabolites
   meta_stoich             = reaction_meta_stoich(org, reaction)
   for metabolite in all_metabolites:
-    if org.is_class(metabolite) and metabolite not in list_generics:
+    if org.is_class(metabolite) and metabolite not in list_generics and str(metabolite) not in generic_exceptions:
       specifics = find_specific(org, metabolite)
       generics_substitutions[str(metabolite).replace("|","")] = specifics # remove "|" which indicates classes
       list_generics.append(metabolite)
@@ -284,4 +284,18 @@ def reaction_generic_specified(org, reaction, org_reaction):
   #print combination
   
   return specified_reactions
+
+
+def read_generic_exceptions(filename):
+  """returns a list with possible generic metabolites which shouldnt be specified"""
+  list = []
+  file = open(filename, "r")
+  for line in file:
+    if line != "\n" and line.lstrip()[0] != "#":
+      name = line.rstrip("\n")
+      print "added exception for generic metabolite", name
+      list.append(name)
+  return list
+      
+
 

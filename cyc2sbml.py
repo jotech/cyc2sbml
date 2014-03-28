@@ -11,6 +11,7 @@ from cobra import Model, Reaction, Metabolite
 from cobra.io.sbml import write_cobra_model_to_sbml_file
 import cyc_access as cyc
 
+r_ignored = open("reactions_ignored", "w")
 
 print pycyc.all_orgs()
 
@@ -20,11 +21,16 @@ print "Loading", answer_org, "with", len(org.all_rxns(":all")), "reactions"
 
 answer_generic = raw_input("\nDo you want to take care of generic metabolites (e.g. tRNA, carboxylates)?\n All subclasses of a generic metabolite will be searched for instances (that is specific metabolites) and specific reactions (could be much more!) will be added instead of the generic one\n [y/n] ")
 care_generics = True if answer_generic == "y" else False
+if care_generics:
+  answer_exceptions = raw_input("\nAre some metabolites (./exceptions.txt) to be kept even if they are generic metabolites? This could be usefull e.g. to summarize lipid metabolism.\n [y/n] ")
+  generic_exceptions = cyc.read_generic_exceptions("./exceptions.txt") if answer_exceptions == "y" else []
+else: generic_exceptions = []
 
 model = Model(answer_org)
 
-#for r in org.all_rxns(":all"):
-for r in org.all_rxns(":all")[0:10]: # only the first reactions -> debugging
+#for r in org.all_rxns(":all"): # all reaction
+for r in org.all_rxns(":metab-smm") + org.all_rxns(":transport"): # only metabolic reactions 
+#for r in org.all_rxns(":all")[0:10]: # only the first reactions -> debugging
   reaction                        = Reaction(cyc.id_cleaner(str(r)))
   reaction.name                   = cyc.reaction_name(org, r)
   reaction.subsystem              = cyc.reaction_subsystem(org, r)
@@ -37,14 +43,11 @@ for r in org.all_rxns(":all")[0:10]: # only the first reactions -> debugging
   #print reaction.print_values()
   #if reaction.check_mass_balance() != []: print reaction, "is not balanced"  # throws error sometimes!
 
-  if care_generics and cyc.reaction_is_generic(org, r):
-    specific_reactions = cyc.reaction_generic_specified(org, r, reaction)
+  if care_generics and cyc.reaction_is_generic(org, r, generic_exceptions):
+    specific_reactions = cyc.reaction_generic_specified(org, r, reaction, generic_exceptions)
     model.add_reactions(specific_reactions)
     print "\nabstract reaction:", reaction, reaction.reaction, "\n\tadded", len(specific_reactions), "specific reactions"
-    list = cyc.reaction_generic_specified(org, r, reaction)
-    for l in list:
-      print l, l.reaction
-    #import pdb; pdb.set_trace()
+    if len(specific_reactions) == 0: print >>r_ignored, str(r), reaction.reaction
   else:
     model.add_reaction(reaction)
 
