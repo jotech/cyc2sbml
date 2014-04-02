@@ -110,11 +110,12 @@ def is_number(s):
     return False
 
 
-def reaction_meta_stoich(org, reaction):
+def reaction_meta_stoich(org, reaction, substitutions):
   """Anlayses a given reaction and returns its metabolites with stoichiometry"""
   meta_stoich_dic = {}
   reactants = org.reaction_reactants_and_products(reaction)[0]
   for reactant in reactants:
+    if str(reactant).replace("|","") in substitutions.keys(): reactant = org.get_frame_labeled(substitutions[str(reactant).replace("|","")])[0] # get substitution of a metabolite if avaible
     stoich = org.get_value_annot(reaction, "left", reactant, "coefficient") # stoichiometry
     if stoich == None: stoich = 1 # None <=> 1
     compartment = metabolite_compartment(org, reaction, reactant, "left")
@@ -128,6 +129,7 @@ def reaction_meta_stoich(org, reaction):
       meta_stoich_dic[metabolite] = stoich
   products = org.reaction_reactants_and_products(reaction)[1]
   for product in products:
+    if str(product).replace("|","") in substitutions.keys(): product = org.get_frame_labeled(substitutions[str(product).replace("|","")])[0] # get substitution of a metabolite if avaible
     stoich = org.get_value_annot(reaction, "right", product, "coefficient") # stoichiometry
     if stoich == None: stoich = 1 # None <=> 1
     compartment = metabolite_compartment(org, reaction, product, "right")
@@ -192,10 +194,13 @@ def reaction_gene_reaction_rule(org, reaction):
   return ("( "+gpr+" )").replace("-","")
 
 
-def reaction_is_generic(org, reaction, exceptions):
+def reaction_is_generic(org, reaction, exceptions, substitutions):
   """Returns True if a reaction contains at least one generic/unspecific metabolite"""
   all_metabolites = org.reaction_reactants_and_products(reaction)[0] + org.reaction_reactants_and_products(reaction)[1]
+  print all_metabolites
   for metabolite in all_metabolites:
+    if str(metabolite).replace("|","") in substitutions.keys(): 
+      metabolite = org.get_frame_labeled(substitutions[str(metabolite).replace("|","")])[0] # get substitution of a metabolite if avaible
     if str(metabolite) not in exceptions and org.is_class(metabolite):
       return True
   return False
@@ -235,14 +240,15 @@ def metabolite_from_string(setlistdic, string):
   return None
 
 
-def reaction_generic_specified(org, reaction, org_reaction, generic_exceptions):
+def reaction_generic_specified(org, reaction, org_reaction, generic_exceptions, substitutions):
   specified_reactions     = []  # list of new specified reactions
   all_metabolites         = org.reaction_reactants_and_products(reaction)[0] + org.reaction_reactants_and_products(reaction)[1]
   generics_substitutions  = {}  # dictionary which contains a list with specific metabolites for each generic one
   list_generics           = []  # list of generic metabolite 
   multilist_specifics     = []  # list containing a list for every generic metabolite containing its specific metabolites
-  meta_stoich             = reaction_meta_stoich(org, reaction)
+  meta_stoich             = reaction_meta_stoich(org, reaction, substitutions)
   for metabolite in all_metabolites:
+    if str(metabolite).replace("|","") in substitutions.keys(): metabolite = org.get_frame_labeled(substitutions[str(metabolite).replace("|","")])[0] # get substitution of a metabolite if avaible
     if org.is_class(metabolite) and metabolite not in list_generics and str(metabolite) not in generic_exceptions:
       specifics = find_specific(org, metabolite)
       generics_substitutions[str(metabolite).replace("|","")] = specifics # remove "|" which indicates classes
@@ -296,6 +302,19 @@ def read_generic_exceptions(filename):
       print "added exception for generic metabolite", name
       list.append(name)
   return list
-      
 
 
+def substitutions_dic(filename):
+  """returns a dictionary containing old:new substitutions of metabolites"""
+  dic = {}
+  file = open(filename, "r")
+  for line in file:
+    if line != "\n" and line.lstrip()[0] != "#":
+      split = line.rstrip("\n").split(":")
+      if len(split) == 2:
+        old = split[0]
+        new = split[1]
+        print old, "is going to be substituted with", new
+      else: print filename, "error in line", line
+      dic[old]=new
+  return dic

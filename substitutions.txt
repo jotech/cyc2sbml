@@ -1,0 +1,9 @@
+#
+# List of compounds which should be substituted
+# syntax: old:new
+#
+Menaquinols:CPD-12124
+Menaquinones:CPD-9724
+Ubiquinones:CPD-9724
+Ubiquinonls:CPD-12124
+Demethylmenaquinols:CPD-12116

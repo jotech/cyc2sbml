@@ -12,6 +12,9 @@ from cobra.io.sbml import write_cobra_model_to_sbml_file
 import cyc_access as cyc
 
 r_ignored = open("reactions_ignored", "w")
+p_ignored = open("pathways_ignored", "w")
+p_ignored_set = set() # set of ignored pathways
+r_ignored_set = set() # set of ignored reactions
 
 print pycyc.all_orgs()
 
@@ -25,10 +28,16 @@ if care_generics:
   answer_exceptions = raw_input("\nAre some metabolites (./exceptions.txt) to be kept even if they are generic metabolites? This could be usefull e.g. to summarize lipid metabolism.\n [y/n] ")
   generic_exceptions = cyc.read_generic_exceptions("./exceptions.txt") if answer_exceptions == "y" else []
 else: generic_exceptions = []
+answer_substitutions = raw_input("\nSubstitutions defined in ./substitutions.txt could be read and applied to exchange certain metabolites in pathwaytools database. Is this to be done? [y/n] ")
+substitutions = cyc.substitutions_dic("./substitutions.txt") if answer_substitutions == "y" else {}
+
+answer_start = raw_input("\n---\nReady to start? [y/n]")
+if not answer_start == "y": quit()
 
 model = Model(answer_org)
 
 #for r in org.all_rxns(":all"): # all reaction
+#for r in [org.get_frame_labeled("R601-RXN")[0], org.get_frame_labeled("RXN-11046")[0]]:  # consider only some reaction for testing
 for r in org.all_rxns(":metab-smm") + org.all_rxns(":transport"): # only metabolic reactions 
 #for r in org.all_rxns(":all")[0:10]: # only the first reactions -> debugging
   reaction                        = Reaction(cyc.id_cleaner(str(r)))
@@ -37,23 +46,33 @@ for r in org.all_rxns(":metab-smm") + org.all_rxns(":transport"): # only metabol
   reaction.lower_bound            = -1000 if cyc.reaction_reversible(org, r) else 0
   reaction.upper_bound            = 1000
   reaction.objective_coefficient  = 0
-  reaction.add_metabolites(cyc.reaction_meta_stoich(org, r))
+  reaction.add_metabolites(cyc.reaction_meta_stoich(org, r, substitutions))
   reaction.gene_reaction_rule     = cyc.reaction_gene_reaction_rule(org, r)
 
   #print reaction.print_values()
   #if reaction.check_mass_balance() != []: print reaction, "is not balanced"  # throws error sometimes!
 
-  if care_generics and cyc.reaction_is_generic(org, r, generic_exceptions):
-    specific_reactions = cyc.reaction_generic_specified(org, r, reaction, generic_exceptions)
+  if care_generics and cyc.reaction_is_generic(org, r, generic_exceptions, substitutions):
+    specific_reactions = cyc.reaction_generic_specified(org, r, reaction, generic_exceptions, substitutions)
     model.add_reactions(specific_reactions)
     print "\nabstract reaction:", reaction, reaction.reaction, "\n\tadded", len(specific_reactions), "specific reactions"
-    if len(specific_reactions) == 0: print >>r_ignored, str(r), reaction.reaction
+    if len(specific_reactions) == 0:
+      r_ignored_set.add(str(r))
+      print >>r_ignored, str(r), reaction.reaction
+      if r.in_pathway != None:
+        plist = r.in_pathway if isinstance(r.in_pathway, list) else [r.in_pathway]
+        p_ignored_set |= set((map(str, plist)))
   else:
     model.add_reaction(reaction)
+
+for pwy in p_ignored_set: print >>p_ignored, pwy, org.get_name_string(pwy) 
 
 print '\n---\n%i reaction in model' % len(model.reactions)
 print '%i metabolites in model' % len(model.metabolites)
 print '%i genes in model\n---\n' % len(model.genes)
+
+print "ignored reactions:", len(r_ignored_set)
+print "thus incomplete pathways:", len(p_ignored_set), "\n"
 
 sbml_out_file = answer_org+'.xml'
 sbml_level    = 2
