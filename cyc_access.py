@@ -197,13 +197,24 @@ def reaction_gene_reaction_rule(org, reaction):
 def reaction_is_generic(org, reaction, exceptions, substitutions):
   """Returns True if a reaction contains at least one generic/unspecific metabolite"""
   all_metabolites = org.reaction_reactants_and_products(reaction)[0] + org.reaction_reactants_and_products(reaction)[1]
-  print all_metabolites
   for metabolite in all_metabolites:
     if str(metabolite).replace("|","") in substitutions.keys(): 
       metabolite = org.get_frame_labeled(substitutions[str(metabolite).replace("|","")])[0] # get substitution of a metabolite if avaible
     if str(metabolite) not in exceptions and org.is_class(metabolite):
       return True
   return False
+
+
+def reaction_get_generic(org, reaction, exceptions, substitutions):
+  """Returns a set with generic/unspecific metabolites of a reaction"""
+  generic = set()
+  all_metabolites = org.reaction_reactants_and_products(reaction)[0] + org.reaction_reactants_and_products(reaction)[1]
+  for metabolite in all_metabolites:
+    if str(metabolite).replace("|","") in substitutions.keys(): 
+      metabolite = org.get_frame_labeled(substitutions[str(metabolite).replace("|","")])[0] # get substitution of a metabolite if avaible
+    if str(metabolite) not in exceptions and org.is_class(metabolite):
+      generic.add(str(metabolite))
+  return generic
 
 
 def find_specific(org, generic_metabolite):
@@ -315,6 +326,32 @@ def substitutions_dic(filename):
         old = split[0]
         new = split[1]
         print old, "is going to be substituted with", new
+        dic[old]=new
       else: print filename, "error in line", line
-      dic[old]=new
   return dic
+
+
+def get_diffusion_reactions(org, filename):
+  """returns a list of diffusion reaction read from file"""
+  reaction_list = []
+  file = open(filename, "r")
+  for line in file:
+    if line != "\n" and line.lstrip()[0] != "#":
+      split = line.rstrip("\n").split(":")
+      if len(split) == 2 and compartment_dic.has_key(split[0]):
+        compartment = compartment_dic[split[0]]
+        substance  = split[1]
+        print "added diffusion reaction for", substance, "into", compartment 
+        metacyc_metabolite = org.get_frame_labeled(substance)[0]
+        formula = metabolite_formula(org, metacyc_metabolite)
+        name = metabolite_name(org, metacyc_metabolite)
+        abbr = id_cleaner(str(metacyc_metabolite)+"_"+compartment)
+        metabolite = Metabolite(abbr, formula, name, compartment)
+        reaction = Reaction("EX_"+str(metabolite)+" (Diffusion)")
+        reaction.lower_bound  = -1000 
+        reaction.upper_bound  = 1000
+        meta_stoich = {metabolite:-1}
+        reaction.add_metabolites(meta_stoich)
+        reaction_list.append(reaction)
+      else: print filename, "error in line", line
+  return reaction_list

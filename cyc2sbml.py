@@ -10,11 +10,14 @@ import pycyc
 from cobra import Model, Reaction, Metabolite
 from cobra.io.sbml import write_cobra_model_to_sbml_file
 import cyc_access as cyc
+import operator
 
 r_ignored = open("reactions_ignored", "w")
 p_ignored = open("pathways_ignored", "w")
+m_generic = open("harmul_generics", "w")
 p_ignored_set = set() # set of ignored pathways
 r_ignored_set = set() # set of ignored reactions
+m_generic_set = {} # dictionary of generic metabolites and how often they lead to a irgnored reaction
 
 print pycyc.all_orgs()
 
@@ -30,14 +33,19 @@ if care_generics:
 else: generic_exceptions = []
 answer_substitutions = raw_input("\nSubstitutions defined in ./substitutions.txt could be read and applied to exchange certain metabolites in pathwaytools database. Is this to be done? [y/n] ")
 substitutions = cyc.substitutions_dic("./substitutions.txt") if answer_substitutions == "y" else {}
+answer_diffusion = raw_input("\nShould a exchange reaction for membrane permeable substances (defined in ./diffusion.txt) be added automatically to the model? [y/n] ")
+if answer_diffusion == "y":
+  diffusion_reactions_list = cyc.get_diffusion_reactions(org, "./diffusion.txt")
+  diffusion_reactions = True
+else: diffusion_reaction = False
 
-answer_start = raw_input("\n---\nReady to start? [y/n]")
+answer_start = raw_input("\n---\nReady to start? [y/n] ")
 if not answer_start == "y": quit()
 
 model = Model(answer_org)
 
 #for r in org.all_rxns(":all"): # all reaction
-#for r in [org.get_frame_labeled("R601-RXN")[0], org.get_frame_labeled("RXN-11046")[0]]:  # consider only some reaction for testing
+#for r in [org.get_frame_labeled("R601-RXN")[0]]:  # consider only some reaction for testing
 for r in org.all_rxns(":metab-smm") + org.all_rxns(":transport"): # only metabolic reactions 
 #for r in org.all_rxns(":all")[0:10]: # only the first reactions -> debugging
   reaction                        = Reaction(cyc.id_cleaner(str(r)))
@@ -62,10 +70,16 @@ for r in org.all_rxns(":metab-smm") + org.all_rxns(":transport"): # only metabol
       if r.in_pathway != None:
         plist = r.in_pathway if isinstance(r.in_pathway, list) else [r.in_pathway]
         p_ignored_set |= set((map(str, plist)))
+      for g in cyc.reaction_get_generic(org, r, generic_exceptions, substitutions):
+        m_generic_set[g] = m_generic_set.get(g, 0) + 1 # count for each generic metabolite how often it causes a irgnored reaction
   else:
     model.add_reaction(reaction)
 
+if diffusion_reactions: model.add_reactions(diffusion_reactions_list) # adding automatically additional diffusion reactions
+
 for pwy in p_ignored_set: print >>p_ignored, pwy, org.get_name_string(pwy) 
+
+for s in sorted(m_generic_set.iteritems(), key=operator.itemgetter(1)): print >> m_generic, s[0], s[1]
 
 print '\n---\n%i reaction in model' % len(model.reactions)
 print '%i metabolites in model' % len(model.metabolites)
