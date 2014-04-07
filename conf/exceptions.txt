@@ -1,6 +1,5 @@
 #
-# This file contains metabolites which sumarize groups of compounds.
-# They will not be specified during cyc2sbml
+# This are metabolites which are included even if they are generic metabolites 
 #
 R-3-hydroxystearoyl-ACPs
 R-3-Hydroxypalmitoyl-ACPs

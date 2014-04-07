@@ -2,8 +2,17 @@
 # List of compounds which should be substituted
 # syntax: old:new
 #
+#
+# menaquinone-6 is active in S. multivorans
 Menaquinols:CPD-12124
 Menaquinones:CPD-9724
 Ubiquinones:CPD-9724
 Ubiquinonls:CPD-12124
 Demethylmenaquinols:CPD-12116
+Quinones:CPD-9724
+Reduced-Quinones:CPD-12124
+#
+# glutaredoxin protein is represented by it's cofactor gluthaion
+# attention stoichiometry has to be adjusted!
+Red-Glutaredoxins:GLUTATHIONE
+Ox-Glutaredoxins:OXIDIZED-GLUTATHIONE
