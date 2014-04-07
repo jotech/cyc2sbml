@@ -9,6 +9,9 @@
 import pycyc
 from cobra import Model, Reaction, Metabolite
 from cobra.io.sbml import write_cobra_model_to_sbml_file
+import sys
+import os
+sys.path.append(os.path.abspath("./lib"))
 import cyc_access as cyc
 import operator
 
@@ -28,16 +31,16 @@ print "Loading", answer_org, "with", len(org.all_rxns(":all")), "reactions"
 answer_generic = raw_input("\nDo you want to take care of generic metabolites (e.g. tRNA, carboxylates)?\n All subclasses of a generic metabolite will be searched for instances (that is specific metabolites) and specific reactions (could be much more!) will be added instead of the generic one\n [y/n] ")
 care_generics = True if answer_generic == "y" else False
 if care_generics:
-  answer_exceptions = raw_input("\nAre some metabolites (./exceptions.txt) to be kept even if they are generic metabolites? This could be usefull e.g. to summarize lipid metabolism.\n [y/n] ")
-  generic_exceptions = cyc.read_generic_exceptions("./exceptions.txt") if answer_exceptions == "y" else []
+  answer_exceptions = raw_input("\nAre some metabolites (./conf/exceptions.txt) to be kept even if they are generic metabolites? This could be usefull e.g. to summarize lipid metabolism.\n [y/n] ")
+  generic_exceptions = cyc.read_generic_exceptions("./conf/exceptions.txt") if answer_exceptions == "y" else []
 else: generic_exceptions = []
 answer_substitutions = raw_input("\nSubstitutions defined in ./substitutions.txt could be read and applied to exchange certain metabolites in pathwaytools database. Is this to be done? [y/n] ")
-substitutions = cyc.substitutions_dic("./substitutions.txt") if answer_substitutions == "y" else {}
-answer_diffusion = raw_input("\nShould a exchange reaction for membrane permeable substances (defined in ./diffusion.txt) be added automatically to the model? [y/n] ")
+substitutions = cyc.substitutions_dic("./conf/substitutions.txt") if answer_substitutions == "y" else {}
+answer_diffusion = raw_input("\nShould a exchange reaction for membrane permeable substances (defined in ./conf/diffusion.txt) be added automatically to the model? [y/n] ")
 if answer_diffusion == "y":
-  diffusion_reactions_list = cyc.get_diffusion_reactions(org, "./diffusion.txt")
+  diffusion_reactions_list = cyc.get_diffusion_reactions(org, "./conf/diffusion.txt")
   diffusion_reactions = True
-else: diffusion_reaction = False
+else: diffusion_reactions = False
 
 answer_start = raw_input("\n---\nReady to start? [y/n] ")
 if not answer_start == "y": quit()
@@ -45,8 +48,8 @@ if not answer_start == "y": quit()
 model = Model(answer_org)
 
 #for r in org.all_rxns(":all"): # all reaction
-#for r in [org.get_frame_labeled("R601-RXN")[0]]:  # consider only some reaction for testing
-for r in org.all_rxns(":metab-smm") + org.all_rxns(":transport"): # only metabolic reactions 
+for r in [org.get_frame_labeled("RXN-7968")[0]]:  # consider only some reaction for testing
+#for r in org.all_rxns(":metab-smm") + org.all_rxns(":transport"): # only metabolic reactions 
 #for r in org.all_rxns(":all")[0:10]: # only the first reactions -> debugging
   reaction                        = Reaction(cyc.id_cleaner(str(r)))
   reaction.name                   = cyc.reaction_name(org, r)
@@ -61,16 +64,16 @@ for r in org.all_rxns(":metab-smm") + org.all_rxns(":transport"): # only metabol
   #if reaction.check_mass_balance() != []: print reaction, "is not balanced"  # throws error sometimes!
 
   if care_generics and cyc.reaction_is_generic(org, r, generic_exceptions, substitutions):
-    specific_reactions = cyc.reaction_generic_specified(org, r, reaction, generic_exceptions, substitutions)
+    specific_reactions = cyc.reaction_generic_specified(org, r, reaction, generic_exceptions, substitutions, cyc.get_generic_assignment("./conf/generic_assignment.txt"))
     model.add_reactions(specific_reactions)
     print "\nabstract reaction:", reaction, reaction.reaction, "\n\tadded", len(specific_reactions), "specific reactions"
     if len(specific_reactions) == 0:
       r_ignored_set.add(str(r))
       print >>r_ignored, str(r), reaction.reaction
-      if r.in_pathway != None:
+      if r.in_pathway != None: # remember missed pathways
         plist = r.in_pathway if isinstance(r.in_pathway, list) else [r.in_pathway]
         p_ignored_set |= set((map(str, plist)))
-      for g in cyc.reaction_get_generic(org, r, generic_exceptions, substitutions):
+      for g in cyc.reaction_get_generic(org, r, generic_exceptions, substitutions): # remember missed reactions
         m_generic_set[g] = m_generic_set.get(g, 0) + 1 # count for each generic metabolite how often it causes a irgnored reaction
   else:
     model.add_reaction(reaction)

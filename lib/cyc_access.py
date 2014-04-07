@@ -251,7 +251,7 @@ def metabolite_from_string(setlistdic, string):
   return None
 
 
-def reaction_generic_specified(org, reaction, org_reaction, generic_exceptions, substitutions):
+def reaction_generic_specified(org, reaction, org_reaction, generic_exceptions, substitutions, generic_assignment):
   specified_reactions     = []  # list of new specified reactions
   all_metabolites         = org.reaction_reactants_and_products(reaction)[0] + org.reaction_reactants_and_products(reaction)[1]
   generics_substitutions  = {}  # dictionary which contains a list with specific metabolites for each generic one
@@ -262,22 +262,44 @@ def reaction_generic_specified(org, reaction, org_reaction, generic_exceptions, 
     if str(metabolite).replace("|","") in substitutions.keys(): metabolite = org.get_frame_labeled(substitutions[str(metabolite).replace("|","")])[0] # get substitution of a metabolite if avaible
     if org.is_class(metabolite) and metabolite not in list_generics and str(metabolite) not in generic_exceptions:
       specifics = find_specific(org, metabolite)
-      generics_substitutions[str(metabolite).replace("|","")] = specifics # remove "|" which indicates classes
-      list_generics.append(metabolite)
+      #generics_substitutions[str(metabolite).replace("|","")] = specifics # remove "|" which indicates classes
+      generics_substitutions[id_cleaner(str(metabolite))] = specifics # cleaning troubling characters in metacyc id names
+      list_generics.append(id_cleaner(str(metabolite)))
       multilist_specifics.append(specifics)
  
-  tmp = {value: len(generics_substitutions[value]) for value in generics_substitutions if len(generics_substitutions[value]) > 1} # only abstract metabolites with more than 1 specifification
+  tmp = {id_cleaner(value): len(generics_substitutions[value]) for value in generics_substitutions if len(generics_substitutions[value]) > 1} # only abstract metabolites with more than 1 specifification
   #print len(generics_substitutions)
-  if len(tmp) > 1: # some kind of problem
-    print "Complex reaction:", org_reaction, org_reaction.reaction, "\nnot added!"
-    return []
+  
   combinations = itertools.product(*multilist_specifics)  # all combinations of specifications in a reaction (k-combination, no order, without replacement)
+  
+  if len(tmp) > 1: # complex reaction possbible due to some equivocal assignments (e.g. NAD(P)-NAD(P)H => specification procedure has to map NAD-NADH and NADP-NADPH, not NAD-NADPH and not NADP-NADH)
+    # try to solve complex reaction with equivocal assignment by reading file with common mappings for each case
+    if set(tmp.keys()) <= set(generic_assignment.keys()): # check if for all complex parts of reaction there are generic assignments => specification is possible
+      combinations_new = []
+      for c in combinations: # for each combination 
+        found = False
+        for element in map(str, c): # for each element of the combination
+          for complex_case in tmp.keys(): # consider only complex cases
+            if element in generic_assignment[complex_case]: # if element is part of a generic assignment
+              if set(generic_assignment[complex_case]) <= set(map(str, c)): # check if assignment is complete (i.e. if A is present the corresponding B has to be present
+                found = True
+                break
+              else: found = False # otherwise this combination is prohibited by generic assignment
+        if found: 
+          combinations_new.append(c)
+      #print combinations_new
+      combinations = combinations_new
+    else:
+      print "Complex reaction:", org_reaction, org_reaction.reaction, "\nnot added!"
+      print tmp
+      return []
   nr = 0
+  print "list_generics", list_generics
   for combination in combinations:
     nr += 1
+    new_meta_stoich = {}
     for index, generic in enumerate(list_generics):
       specific = combination[index]
-      new_meta_stoich = {}
       for entry in meta_stoich: # change generic to specific metabolite in reaction list (meta_stoich) and build a new reaction
         if entry.id[:entry.id.find("_")] == str(generic).replace("|",""):
           generic_metabolite      = entry
@@ -285,7 +307,7 @@ def reaction_generic_specified(org, reaction, org_reaction, generic_exceptions, 
           specific_metabolite.id  = specific_metabolite.id.replace(str(generic).replace("|",""), str(specific))
           specific_metabolite.name= metabolite_name(org, specific)
           new_meta_stoich[specific_metabolite] = meta_stoich[entry]
-        else:
+        elif entry.id[:entry.id.find("_")] not in list_generics:
           new_meta_stoich[entry] = meta_stoich[entry]
     reaction_new = Reaction(org_reaction.id + "_" + str(nr))
     reaction_new.name                   = org_reaction.name
@@ -295,11 +317,8 @@ def reaction_generic_specified(org, reaction, org_reaction, generic_exceptions, 
     reaction_new.objective_coefficient  = org_reaction.objective_coefficient
     reaction_new.add_metabolites(new_meta_stoich)
     reaction_new.gene_reaction_rule     = org_reaction.gene_reaction_rule
-    
+    #print reaction_new.reaction
     specified_reactions.append(reaction_new)
-
-  #print combination
-  
   return specified_reactions
 
 
@@ -355,3 +374,19 @@ def get_diffusion_reactions(org, filename):
         reaction_list.append(reaction)
       else: print filename, "error in line", line
   return reaction_list
+
+
+def get_generic_assignment(filename):
+  """returns a dictionary containing for each generic compounds (for which assignments exists) a tuple with its assignments"""
+  dic_assignments = {}
+  file = open(filename, "r")
+  for line in file:
+    if line != "\n" and line.lstrip()[0] != "#":
+      split = line.rstrip("\n").split(":")
+      if len(split) == 3:
+        generic_name  = id_cleaner(split[0])  # name of generic compound
+        assignment1   = split[1]  # first metabolite to be assigned
+        assignment2   = split[2]  # second metabolite to be assigned
+        dic_assignments[generic_name] = assignment1, assignment2
+      else: print filename, "error in line", line
+  return dic_assignments
