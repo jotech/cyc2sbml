@@ -48,8 +48,8 @@ if not answer_start == "y": quit()
 model = Model(answer_org)
 
 #for r in org.all_rxns(":all"): # all reaction
-for r in [org.get_frame_labeled("RXN-7968")[0]]:  # consider only some reaction for testing
-#for r in org.all_rxns(":metab-smm") + org.all_rxns(":transport"): # only metabolic reactions 
+#for r in [org.get_frame_labeled("RXN-7968")[0], org.get_frame_labeled("TRANS-RXNRTT-99")[0]]:  # consider only some reaction for testing
+for r in org.all_rxns(":metab-smm") + org.all_rxns(":transport"): # only metabolic reactions 
 #for r in org.all_rxns(":all")[0:10]: # only the first reactions -> debugging
   reaction                        = Reaction(cyc.id_cleaner(str(r)))
   reaction.name                   = cyc.reaction_name(org, r)

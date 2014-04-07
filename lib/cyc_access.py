@@ -260,9 +260,8 @@ def reaction_generic_specified(org, reaction, org_reaction, generic_exceptions, 
   meta_stoich             = reaction_meta_stoich(org, reaction, substitutions)
   for metabolite in all_metabolites:
     if str(metabolite).replace("|","") in substitutions.keys(): metabolite = org.get_frame_labeled(substitutions[str(metabolite).replace("|","")])[0] # get substitution of a metabolite if avaible
-    if org.is_class(metabolite) and metabolite not in list_generics and str(metabolite) not in generic_exceptions:
+    if org.is_class(metabolite) and id_cleaner(str(metabolite)) not in list_generics and str(metabolite) not in generic_exceptions:
       specifics = find_specific(org, metabolite)
-      #generics_substitutions[str(metabolite).replace("|","")] = specifics # remove "|" which indicates classes
       generics_substitutions[id_cleaner(str(metabolite))] = specifics # cleaning troubling characters in metacyc id names
       list_generics.append(id_cleaner(str(metabolite)))
       multilist_specifics.append(specifics)
@@ -304,7 +303,8 @@ def reaction_generic_specified(org, reaction, org_reaction, generic_exceptions, 
         if entry.id[:entry.id.find("_")] == str(generic).replace("|",""):
           generic_metabolite      = entry
           specific_metabolite     = copy.deepcopy(generic_metabolite)
-          specific_metabolite.id  = specific_metabolite.id.replace(str(generic).replace("|",""), str(specific))
+          #specific_metabolite.id  = specific_metabolite.id.replace(str(generic).replace("|",""), str(specific))
+          specific_metabolite.id  = specific_metabolite.id.replace(generic, str(specific))
           specific_metabolite.name= metabolite_name(org, specific)
           new_meta_stoich[specific_metabolite] = meta_stoich[entry]
         elif entry.id[:entry.id.find("_")] not in list_generics:
