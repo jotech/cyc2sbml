@@ -115,7 +115,7 @@ def reaction_meta_stoich(org, reaction, substitutions):
   meta_stoich_dic = {}
   reactants = org.reaction_reactants_and_products(reaction)[0]
   for reactant in reactants:
-    if str(reactant).replace("|","") in substitutions.keys(): reactant = org.get_frame_labeled(substitutions[str(reactant).replace("|","")])[0] # get substitution of a metabolite if avaible
+    if id_cleaner(str(reactant)) in substitutions.keys(): reactant = org.get_frame_labeled(substitutions[id_cleaner(str(reactant))])[0] # get substitution of a metabolite if avaible
     stoich = org.get_value_annot(reaction, "left", reactant, "coefficient") # stoichiometry
     if stoich == None: stoich = 1 # None <=> 1
     compartment = metabolite_compartment(org, reaction, reactant, "left")
@@ -129,7 +129,7 @@ def reaction_meta_stoich(org, reaction, substitutions):
       meta_stoich_dic[metabolite] = stoich
   products = org.reaction_reactants_and_products(reaction)[1]
   for product in products:
-    if str(product).replace("|","") in substitutions.keys(): product = org.get_frame_labeled(substitutions[str(product).replace("|","")])[0] # get substitution of a metabolite if avaible
+    if id_cleaner(str(product)) in substitutions.keys(): product = org.get_frame_labeled(substitutions[id_cleaner(str(product))])[0] # get substitution of a metabolite if avaible
     stoich = org.get_value_annot(reaction, "right", product, "coefficient") # stoichiometry
     if stoich == None: stoich = 1 # None <=> 1
     compartment = metabolite_compartment(org, reaction, product, "right")
@@ -198,9 +198,9 @@ def reaction_is_generic(org, reaction, exceptions, substitutions):
   """Returns True if a reaction contains at least one generic/unspecific metabolite"""
   all_metabolites = org.reaction_reactants_and_products(reaction)[0] + org.reaction_reactants_and_products(reaction)[1]
   for metabolite in all_metabolites:
-    if str(metabolite).replace("|","") in substitutions.keys(): 
-      metabolite = org.get_frame_labeled(substitutions[str(metabolite).replace("|","")])[0] # get substitution of a metabolite if avaible
-    if str(metabolite) not in exceptions and org.is_class(metabolite):
+    if id_cleaner(str(metabolite)) in substitutions.keys(): 
+      metabolite = org.get_frame_labeled(substitutions[id_cleaner(str(metabolite))])[0] # get substitution of a metabolite if avaible
+    if id_cleaner(str(metabolite)) not in exceptions and org.is_class(metabolite):
       return True
   return False
 
@@ -210,9 +210,9 @@ def reaction_get_generic(org, reaction, exceptions, substitutions):
   generic = set()
   all_metabolites = org.reaction_reactants_and_products(reaction)[0] + org.reaction_reactants_and_products(reaction)[1]
   for metabolite in all_metabolites:
-    if str(metabolite).replace("|","") in substitutions.keys(): 
-      metabolite = org.get_frame_labeled(substitutions[str(metabolite).replace("|","")])[0] # get substitution of a metabolite if avaible
-    if str(metabolite) not in exceptions and org.is_class(metabolite):
+    if id_cleaner(str(metabolite)) in substitutions.keys(): 
+      metabolite = org.get_frame_labeled(substitutions[id_cleaner(str(metabolite))])[0] # get substitution of a metabolite if avaible
+    if id_cleaner(str(metabolite)) not in exceptions and org.is_class(metabolite):
       generic.add(str(metabolite))
   return generic
 
@@ -260,7 +260,7 @@ def reaction_generic_specified(org, reaction, org_reaction, generic_exceptions, 
   meta_stoich             = reaction_meta_stoich(org, reaction, substitutions)
   for metabolite in all_metabolites:
     if str(metabolite).replace("|","") in substitutions.keys(): metabolite = org.get_frame_labeled(substitutions[str(metabolite).replace("|","")])[0] # get substitution of a metabolite if avaible
-    if org.is_class(metabolite) and id_cleaner(str(metabolite)) not in list_generics and str(metabolite) not in generic_exceptions:
+    if org.is_class(metabolite) and id_cleaner(str(metabolite)) not in list_generics and id_cleaner(str(metabolite)) not in generic_exceptions:
       specifics = find_specific(org, metabolite)
       generics_substitutions[id_cleaner(str(metabolite))] = specifics # cleaning troubling characters in metacyc id names
       list_generics.append(id_cleaner(str(metabolite)))
@@ -286,7 +286,7 @@ def reaction_generic_specified(org, reaction, org_reaction, generic_exceptions, 
               else: found = False # otherwise this combination is prohibited by generic assignment
         if found: 
           combinations_new.append(c)
-      #print combinations_new
+      print combinations_new
       combinations = combinations_new
     else:
       print "Complex reaction:", org_reaction, org_reaction.reaction, "\nnot added!"
@@ -330,7 +330,7 @@ def read_generic_exceptions(filename):
     if line != "\n" and line.lstrip()[0] != "#":
       name = line.rstrip("\n")
       print "added exception for generic metabolite", name
-      list.append(name)
+      list.append(id_cleaner(name))
   return list
 
 
@@ -345,7 +345,7 @@ def substitutions_dic(filename):
         old = split[0]
         new = split[1]
         print old, "is going to be substituted with", new
-        dic[old]=new
+        dic[id_cleaner(old)]=new # attention: only the key of the dictionary can be cleaned (no annoying chars) because the value is used to access ptools objects via api
       else: print filename, "error in line", line
   return dic
 
@@ -385,8 +385,8 @@ def get_generic_assignment(filename):
       split = line.rstrip("\n").split(":")
       if len(split) == 3:
         generic_name  = id_cleaner(split[0])  # name of generic compound
-        assignment1   = split[1]  # first metabolite to be assigned
-        assignment2   = split[2]  # second metabolite to be assigned
+        assignment1   = id_cleaner(split[1])  # first metabolite to be assigned
+        assignment2   = id_cleaner(split[2])  # second metabolite to be assigned
         dic_assignments[generic_name] = assignment1, assignment2
       else: print filename, "error in line", line
   return dic_assignments
