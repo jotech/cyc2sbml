@@ -1,6 +1,9 @@
 #
-#
-#
-#
-NAD-P-OR-NOP:NAD:NADH
-NADH-P-OR-NOP:NADP:NADPH
+# generic assignments describe metabolites which belongs together
+# syntax: metabolite1:metabolite2 
+# (order is unimportant) 
+# 
+FAD:FADH2
+FMN:FMNH2
+NAD:NADH
+NADP:NADPH
