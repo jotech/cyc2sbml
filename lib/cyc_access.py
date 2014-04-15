@@ -372,7 +372,8 @@ def get_diffusion_reactions(org, filename):
         name = metabolite_name(org, metacyc_metabolite)
         abbr = id_cleaner(str(metacyc_metabolite)+"_"+compartment)
         metabolite = Metabolite(abbr, formula, name, compartment)
-        reaction = Reaction("EX_"+str(metabolite)+" (Diffusion)")
+        reaction = Reaction("EX_"+str(metabolite))
+        reaction.name = "Diffusion of " + name
         reaction.lower_bound  = -1000 
         reaction.upper_bound  = 1000
         meta_stoich = {metabolite:-1}
