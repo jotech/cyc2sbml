@@ -267,33 +267,39 @@ def reaction_generic_specified(org, reaction, org_reaction, generic_exceptions, 
       multilist_specifics.append(specifics)
  
   tmp = {id_cleaner(value): len(generics_substitutions[value]) for value in generics_substitutions if len(generics_substitutions[value]) > 1} # only abstract metabolites with more than 1 specifification
+  tmp_set = set() # specified set of the complex case
+  for value in generics_substitutions:
+    if len(generics_substitutions[value]) > 1:
+      tmp_set |= set(map(str, generics_substitutions[value]))
   #print len(generics_substitutions)
   
   combinations = itertools.product(*multilist_specifics)  # all combinations of specifications in a reaction (k-combination, no order, without replacement)
   
   if len(tmp) > 1: # complex reaction possbible due to some equivocal assignments (e.g. NAD(P)-NAD(P)H => specification procedure has to map NAD-NADH and NADP-NADPH, not NAD-NADPH and not NADP-NADH)
     # try to solve complex reaction with equivocal assignment by reading file with common mappings for each case
-    if set(tmp.keys()) <= set(generic_assignment.keys()): # check if for all complex parts of reaction there are generic assignments => specification is possible
+    print "generics:", tmp
+    print "identified specifications:",tmp_set
+    if tmp_set <= set(generic_assignment.keys()): # check if for all complex parts of reaction there are generic assignments => specification is possible
       combinations_new = []
       for c in combinations: # for each combination 
+        #print c
         found = False
         for element in map(str, c): # for each element of the combination
-          for complex_case in tmp.keys(): # consider only complex cases
-            if element in generic_assignment[complex_case]: # if element is part of a generic assignment
-              if set(generic_assignment[complex_case]) <= set(map(str, c)): # check if assignment is complete (i.e. if A is present the corresponding B has to be present
-                found = True
-                break
-              else: found = False # otherwise this combination is prohibited by generic assignment
+          if element in tmp_set: # if element is in specified set of the complex case
+            if not generic_assignment[element] in map(str, c):# check if assignment is complete (i.e. if A is present the corresponding B has to be present
+              found = False
+              break
+            else: 
+              found = True
         if found: 
           combinations_new.append(c)
-      print combinations_new
+      print "useful pairs:", combinations_new
       combinations = combinations_new
     else:
       print "Complex reaction:", org_reaction, org_reaction.reaction, "\nnot added!"
       print tmp
       return []
   nr = 0
-  print "list_generics", list_generics
   for combination in combinations:
     nr += 1
     new_meta_stoich = {}
@@ -383,10 +389,15 @@ def get_generic_assignment(filename):
   for line in file:
     if line != "\n" and line.lstrip()[0] != "#":
       split = line.rstrip("\n").split(":")
-      if len(split) == 3:
-        generic_name  = id_cleaner(split[0])  # name of generic compound
-        assignment1   = id_cleaner(split[1])  # first metabolite to be assigned
-        assignment2   = id_cleaner(split[2])  # second metabolite to be assigned
-        dic_assignments[generic_name] = assignment1, assignment2
+      #if len(split) == 3:
+      if len(split) == 2:
+        #generic_name  = id_cleaner(split[0])  # name of generic compound
+        #assignment1   = id_cleaner(split[1])  # first metabolite to be assigned
+        assignment1   = id_cleaner(split[0])  # first metabolite to be assigned
+        #assignment2   = id_cleaner(split[2])  # second metabolite to be assigned
+        assignment2   = id_cleaner(split[1])  # second metabolite to be assigned
+        #dic_assignments[generic_name] = assignment1, assignment2
+        dic_assignments[assignment1] = assignment2
+        dic_assignments[assignment2] = assignment1
       else: print filename, "error in line", line
   return dic_assignments
