@@ -113,7 +113,13 @@ def is_number(s):
 def reaction_meta_stoich(org, reaction, substitutions):
   """Anlayses a given reaction and returns its metabolites with stoichiometry"""
   meta_stoich_dic = {}
-  reactants = org.reaction_reactants_and_products(reaction)[0]
+  if reaction.reaction_direction == "RIGHT-TO-LEFT": # Attention: pathwaytools considers reactions  of the type "B <- A" confusingly (B is reactant and A is product!!)
+    reactants = org.reaction_reactants_and_products(reaction)[1]
+    products = org.reaction_reactants_and_products(reaction)[0]
+  else:
+    reactants = org.reaction_reactants_and_products(reaction)[0]
+    products = org.reaction_reactants_and_products(reaction)[1]
+
   for reactant in reactants:
     if id_cleaner(str(reactant)) in substitutions.keys(): reactant = org.get_frame_labeled(substitutions[id_cleaner(str(reactant))])[0] # get substitution of a metabolite if avaible
     stoich = org.get_value_annot(reaction, "left", reactant, "coefficient") # stoichiometry
@@ -127,7 +133,6 @@ def reaction_meta_stoich(org, reaction, substitutions):
       meta_stoich_dic[metabolite] = -int(stoich) # negative because reactant is consumed
     else:
       meta_stoich_dic[metabolite] = stoich
-  products = org.reaction_reactants_and_products(reaction)[1]
   for product in products:
     if id_cleaner(str(product)) in substitutions.keys(): product = org.get_frame_labeled(substitutions[id_cleaner(str(product))])[0] # get substitution of a metabolite if avaible
     stoich = org.get_value_annot(reaction, "right", product, "coefficient") # stoichiometry
@@ -147,7 +152,7 @@ def reaction_meta_stoich(org, reaction, substitutions):
 def reaction_reversible(org, reaction):
   """Returns True/False if reaction is reversible or not"""
   dir = reaction.reaction_direction
-  if str(dir).lower() == "reversible" or dir == None: # metacyc has no entry if it's reversible...
+  if str(dir).lower() == "reversible" or dir == None: # consider reaction with unknow reversibility as reversible
     return True
   else:
     return False
