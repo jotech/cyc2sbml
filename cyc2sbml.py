@@ -42,18 +42,24 @@ if answer_diffusion == "y":
   diffusion_reactions_list = cyc.get_diffusion_reactions(org, "./conf/diffusion.txt")
   diffusion_reactions = True
 else: diffusion_reactions = False
+answer_bigg_names = raw_input("Do you want to use bigg reaction names? [y/n] ")
+bigg_names = True if answer_bigg_names == "y" else False
+if bigg_names: bigg_reaction_dic = cyc.get_bigg_reaction_dic("./conf/metacyc_bigg.txt")
 
-answer_start = raw_input("\n---\nReady to start? [y/n]")
+answer_start = raw_input("\n---\nReady to start? [y/n] ")
 if not answer_start == "y": quit()
 else: print "\n\n"
 
 model = Model(answer_org)
 
 #for r in org.all_rxns(":all"): # all reaction
-#for r in [org.get_frame_labeled("RXNRTT-73")[0], org.get_frame_labeled("RXN-7968")[0]]:  # consider only some reaction for testing
+#for r in [org.get_frame_labeled("ACETATEKIN-RXN")[0]]:  # consider only some reaction for testing
 for r in org.all_rxns(":metab-smm") + org.all_rxns(":transport"): # only metabolic reactions 
 #for r in org.all_rxns(":all")[0:10]: # only the first reactions -> debugging
-  reaction                        = Reaction(cyc.id_cleaner(str(r)))
+  if bigg_names and bigg_reaction_dic.has_key(str(r)):
+    reaction                      = Reaction(bigg_reaction_dic[str(r)]) if bigg_reaction_dic[str(r)] not in model.reactions else Reaction(cyc.id_cleaner(str(r)))
+  else:
+    reaction                      = Reaction(cyc.id_cleaner(str(r)))
   reaction.name                   = cyc.reaction_name(org, r)
   reaction.subsystem              = cyc.reaction_subsystem(org, r)
   reaction.lower_bound            = -1000 if cyc.reaction_reversible(org, r) else 0

@@ -407,3 +407,16 @@ def get_generic_assignment(filename):
         dic_assignments[assignment2] = assignment1
       else: print filename, "error in line", line
   return dic_assignments
+
+
+def get_bigg_reaction_dic(filename):
+  dic = {}
+  file = open(filename, "r")
+  for line in file:
+    if line != "\n" and line.lstrip()[0] != "#":
+      split = line.rstrip("\n").split("\t")
+      if len(split) == 2:
+        metacyc_id = split[0]
+        kegg_id = split[1]
+        dic[metacyc_id] = kegg_id
+  return dic
