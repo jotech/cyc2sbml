@@ -113,7 +113,7 @@ def is_number(s):
 def reaction_meta_stoich(org, reaction, substitutions):
   """Anlayses a given reaction and returns its metabolites with stoichiometry"""
   meta_stoich_dic = {}
-  if reaction.reaction_direction == "RIGHT-TO-LEFT": # Attention: pathwaytools considers reactions  of the type "B <- A" confusingly (B is reactant and A is product!!)
+  if reaction.reaction_direction == "RIGHT-TO-LEFT" or reaction.reaction_direction ==  "PHYSIOL-RIGHT-TO-LEFT": # Attention: pathwaytools considers reactions  of the type "B <- A" confusingly (B is reactant and A is product!!)
     reactants = org.reaction_reactants_and_products(reaction)[1]
     products = org.reaction_reactants_and_products(reaction)[0]
   else:
@@ -152,7 +152,8 @@ def reaction_meta_stoich(org, reaction, substitutions):
 def reaction_reversible(org, reaction):
   """Returns True/False if reaction is reversible or not"""
   dir = reaction.reaction_direction
-  if str(dir).lower() == "reversible" or dir == None: # consider reaction with unknow reversibility as reversible
+  #if str(dir).lower() == "reversible" or dir == None: # consider reaction with unknow reversibility as reversible
+  if str(dir).lower() == "reversible":
     return True
   else:
     return False
