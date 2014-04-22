@@ -315,7 +315,7 @@ def reaction_generic_specified(org, reaction, org_reaction, generic_exceptions, 
           generic_metabolite      = entry
           specific_metabolite     = copy.deepcopy(generic_metabolite)
           #specific_metabolite.id  = specific_metabolite.id.replace(str(generic).replace("|",""), str(specific))
-          specific_metabolite.id  = specific_metabolite.id.replace(generic, str(specific))
+          specific_metabolite.id  = specific_metabolite.id.replace(generic, id_cleaner(str(specific)))
           specific_metabolite.name= metabolite_name(org, specific)
           new_meta_stoich[specific_metabolite] = meta_stoich[entry]
         elif entry.id[:entry.id.find("_")] not in list_generics:
@@ -397,12 +397,8 @@ def get_generic_assignment(filename):
       split = line.rstrip("\n").split(":")
       #if len(split) == 3:
       if len(split) == 2:
-        #generic_name  = id_cleaner(split[0])  # name of generic compound
-        #assignment1   = id_cleaner(split[1])  # first metabolite to be assigned
         assignment1   = id_cleaner(split[0])  # first metabolite to be assigned
-        #assignment2   = id_cleaner(split[2])  # second metabolite to be assigned
         assignment2   = id_cleaner(split[1])  # second metabolite to be assigned
-        #dic_assignments[generic_name] = assignment1, assignment2
         dic_assignments[assignment1] = assignment2
         dic_assignments[assignment2] = assignment1
       else: print filename, "error in line", line
