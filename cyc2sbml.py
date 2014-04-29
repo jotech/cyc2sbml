@@ -18,6 +18,7 @@ import operator
 r_ignored = open("reactions_ignored", "w")
 p_ignored = open("pathways_ignored", "w")
 m_generic = open("harmul_generics", "w")
+mass_balance = open("mass_balance", "w")
 #p_ignored_set = set() # set of ignored pathways
 p_ignored_set = {} # dictionary of ignored pathways and blocking metabolites
 r_ignored_set = set() # set of ignored reactions
@@ -53,14 +54,15 @@ else: print "\n\n"
 model = Model(answer_org)
 
 #for r in org.all_rxns(":all"): # all reaction
-#for r in [org.get_frame_labeled("ACETATEKIN-RXN")[0]]:  # consider only some reaction for testing
-for r in org.all_rxns(":metab-smm") + org.all_rxns(":transport"): # only metabolic reactions 
+#for r in [org.get_frame_labeled("TRANS-RXNRTT-112")[0]]:  # consider only some reaction for testing
+for r in org.all_rxns(":metab-all") + org.all_rxns(":transport"): # only metabolic reactions 
 #for r in org.all_rxns(":all")[0:10]: # only the first reactions -> debugging
   if bigg_names and bigg_reaction_dic.has_key(str(r)):
     reaction                      = Reaction(bigg_reaction_dic[str(r)]) if bigg_reaction_dic[str(r)] not in model.reactions else Reaction(cyc.id_cleaner(str(r)))
   else:
     reaction                      = Reaction(cyc.id_cleaner(str(r)))
-  reaction.name                   = cyc.reaction_name(org, r)
+  if reaction.id == "": reaction.id = r.ec_number
+  reaction.name                   = cyc.reaction_name(org, r) + " " + str(r.ec_number)
   reaction.subsystem              = cyc.reaction_subsystem(org, r)
   reaction.lower_bound            = -1000 if cyc.reaction_reversible(org, r) else 0
   reaction.upper_bound            = 1000
@@ -91,6 +93,10 @@ for r in org.all_rxns(":metab-smm") + org.all_rxns(":transport"): # only metabol
     model.add_reaction(reaction)
 
 if diffusion_reactions: model.add_reactions(diffusion_reactions_list) # adding automatically additional diffusion reactions
+
+for r in model.reactions: 
+  if r.check_mass_balance() != []: 
+    print >>mass_balance, r.id, r.name, r.check_mass_balance()
 
 for pwy in p_ignored_set: print >>p_ignored, pwy, org.get_name_string(pwy), p_ignored_set[pwy] 
 

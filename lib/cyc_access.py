@@ -1,9 +1,9 @@
 import re
-from cobra import Model, Reaction, Metabolite
+from cobra import Model, Reaction, Metabolite, Formula
 import itertools
 import copy
 
-compartment_dic = {"CCO-IN":"c", "CCO-EXTRACELLULAR":"e", "CCO-CYTOSOL":"c", "CCO-PERI-BAC":"p", "CCO-OUT":"e"}
+compartment_dic = {"CCO-IN":"c", "CCO-EXTRACELLULAR":"p", "CCO-CYTOSOL":"c", "CCO-PERI-BAC":"p", "CCO-OUT":"p", "CCO-PERIPLASM":"p"}
 
 
 
@@ -318,6 +318,7 @@ def reaction_generic_specified(org, reaction, org_reaction, generic_exceptions, 
           #specific_metabolite.id  = specific_metabolite.id.replace(str(generic).replace("|",""), str(specific))
           specific_metabolite.id  = specific_metabolite.id.replace(generic, id_cleaner(str(specific)))
           specific_metabolite.name= metabolite_name(org, specific)
+          specific_metabolite.formula = Formula(metabolite_formula(org, specific))
           new_meta_stoich[specific_metabolite] = meta_stoich[entry]
         elif entry.id[:entry.id.find("_")] not in list_generics:
           new_meta_stoich[entry] = meta_stoich[entry]
@@ -355,7 +356,7 @@ def substitutions_dic(filename):
       split = line.rstrip("\n").split(":")
       if len(split) == 2:
         old = split[0]
-        new = split[1]
+        new = split[1] if split[1] != "" else "deleted"
         print old, "is going to be substituted with", new
         dic[id_cleaner(old)]=new # attention: only the key of the dictionary can be cleaned (no annoying chars) because the value is used to access ptools objects via api
       else: print filename, "error in line", line
