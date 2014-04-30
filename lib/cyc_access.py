@@ -116,13 +116,17 @@ def reaction_meta_stoich(org, reaction, substitutions):
   if reaction.reaction_direction == "RIGHT-TO-LEFT" or reaction.reaction_direction ==  "PHYSIOL-RIGHT-TO-LEFT": # Attention: pathwaytools considers reactions  of the type "B <- A" confusingly (B is reactant and A is product!!)
     reactants = org.reaction_reactants_and_products(reaction)[1]
     products = org.reaction_reactants_and_products(reaction)[0]
+    side1 = "right"
+    side2 = "left"
   else:
     reactants = org.reaction_reactants_and_products(reaction)[0]
     products = org.reaction_reactants_and_products(reaction)[1]
-
+    side1 = "left"
+    side2 = "right"
   for reactant in reactants:
     if id_cleaner(str(reactant)) in substitutions.keys(): reactant = org.get_frame_labeled(substitutions[id_cleaner(str(reactant))])[0] # get substitution of a metabolite if avaible
-    stoich = org.get_value_annot(reaction, "left", reactant, "coefficient") # stoichiometry
+    stoich = org.get_value_annot(reaction, side1, reactant, "coefficient") # stoichiometry
+    print
     if stoich == None: stoich = 1 # None <=> 1
     compartment = metabolite_compartment(org, reaction, reactant, "left")
     formula = metabolite_formula(org, reactant)
@@ -135,7 +139,7 @@ def reaction_meta_stoich(org, reaction, substitutions):
       meta_stoich_dic[metabolite] = stoich
   for product in products:
     if id_cleaner(str(product)) in substitutions.keys(): product = org.get_frame_labeled(substitutions[id_cleaner(str(product))])[0] # get substitution of a metabolite if avaible
-    stoich = org.get_value_annot(reaction, "right", product, "coefficient") # stoichiometry
+    stoich = org.get_value_annot(reaction, side2, product, "coefficient") # stoichiometry
     if stoich == None: stoich = 1 # None <=> 1
     compartment = metabolite_compartment(org, reaction, product, "right")
     formula = metabolite_formula(org, product)
