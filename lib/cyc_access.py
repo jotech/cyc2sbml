@@ -126,7 +126,6 @@ def reaction_meta_stoich(org, reaction, substitutions):
   for reactant in reactants:
     if id_cleaner(str(reactant)) in substitutions.keys(): reactant = org.get_frame_labeled(substitutions[id_cleaner(str(reactant))])[0] # get substitution of a metabolite if avaible
     stoich = org.get_value_annot(reaction, side1, reactant, "coefficient") # stoichiometry
-    print
     if stoich == None: stoich = 1 # None <=> 1
     compartment = metabolite_compartment(org, reaction, reactant, "left")
     formula = metabolite_formula(org, reactant)
@@ -201,7 +200,10 @@ def reaction_gene_reaction_rule(org, reaction):
       
   gpr   = re.sub("[\[\]]", "", gpr) # remove [ ] brackets
   #return "("+gpr+")"
-  return ("( "+gpr+" )").replace("-","")
+  if gpr == "":
+    return ""
+  else:
+    return ("( "+gpr+" )").replace("-","")
 
 
 def reaction_is_generic(org, reaction, exceptions, substitutions):
@@ -306,11 +308,13 @@ def reaction_generic_specified(org, reaction, org_reaction, generic_exceptions, 
       print "useful pairs:", combinations_new
       combinations = combinations_new
     else:
-      print "Complex reaction:", org_reaction, org_reaction.reaction, "\nnot added!"
+      #print "Complex reaction:", org_reaction, org_reaction.reaction, "\nnot added!"
+      print "Complex reaction:", org_reaction, "\nnot added!"
       print tmp
       return []
   nr = 0
   for combination in combinations:
+    #print combination
     nr += 1
     new_meta_stoich = {}
     for index, generic in enumerate(list_generics):
@@ -323,6 +327,7 @@ def reaction_generic_specified(org, reaction, org_reaction, generic_exceptions, 
           specific_metabolite.id  = specific_metabolite.id.replace(generic, id_cleaner(str(specific)))
           specific_metabolite.name= metabolite_name(org, specific)
           specific_metabolite.formula = Formula(metabolite_formula(org, specific))
+          if specific_metabolite.formula == "": specific_metabolite.formula=Formula("H")
           new_meta_stoich[specific_metabolite] = meta_stoich[entry]
         elif entry.id[:entry.id.find("_")] not in list_generics:
           new_meta_stoich[entry] = meta_stoich[entry]
@@ -334,7 +339,7 @@ def reaction_generic_specified(org, reaction, org_reaction, generic_exceptions, 
     reaction_new.objective_coefficient  = org_reaction.objective_coefficient
     reaction_new.add_metabolites(new_meta_stoich)
     reaction_new.gene_reaction_rule     = org_reaction.gene_reaction_rule
-    #print reaction_new.reaction
+    print "\t new specified reaction:", reaction_new.reaction
     specified_reactions.append(reaction_new)
   return specified_reactions
 
@@ -422,3 +427,17 @@ def get_bigg_reaction_dic(filename):
         kegg_id = split[1]
         dic[metacyc_id] = kegg_id
   return dic
+
+
+def get_to_ignore_reactions(filename): 
+  s = set()
+  file = open(filename, "r")
+  for line in file:
+    if line != "\n" and line.lstrip()[0] != "#":
+      if "#" in line:
+        reaction  = line[0:line.rfind("#")]
+      else: reaction  = line
+      reaction= reaction.rstrip("\n").strip()
+      print "to be ignored reaction:", line.rstrip("\n")
+      s.add(reaction)
+  return s
