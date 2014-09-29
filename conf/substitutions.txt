@@ -8,9 +8,13 @@ Menaquinols:CPD-12124
 Menaquinones:CPD-9724
 Ubiquinones:CPD-9724
 Ubiquinols:CPD-12124
+ETR-Quinols:CPD-12124
+ETR-Quinones:CPD-9724
 Demethylmenaquinols:CPD-12116
 Quinones:CPD-9724
 Reduced-Quinones:CPD-12124
+Reduced-cytochromes:Cytochromes-C-Reduced
+Oxidized-cytochromes:Cytochromes-C-Oxidized
 #
 # glutaredoxin protein is represented by it's cofactor gluthaion
 # attention stoichiometry has to be adjusted!
