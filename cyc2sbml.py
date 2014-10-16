@@ -50,6 +50,8 @@ bigg_names = True if answer_bigg_names == "y" else False
 if bigg_names: bigg_reaction_dic = cyc.get_bigg_reaction_dic("./conf/metacyc_bigg.txt")
 answer_ignore = raw_input("\nShould some reactions defined in ./conf/ignore.txt be ignored? [y/n] ")
 to_ignore = cyc.get_to_ignore_reactions("./conf/ignore.txt") if answer_ignore == "y" else set()
+answer_gene_names = raw_input("\nDo you want to use different gene names (locus tags) as used in ptools? .conf/gene_names.txt [y/n] ")
+gene_names = cyc.get_gene_names_dic("./conf/gene_names_dict.txt") if answer_gene_names == "y" else {}
 
 
 answer_start = raw_input("\n---\nReady to start? [y/n] ")
@@ -60,8 +62,8 @@ model = Model(answer_org)
 
 #for r in org.all_rxns(":all"): # all reaction
 #for r in [org.get_frame_labeled("DNA-DIRECTED-DNA-POLYMERASE-RXN")[0]]:  # consider only some reaction for testing
-for r in org.all_rxns(":metab-all") + org.all_rxns(":transport"): # only metabolic reactions 
-#for r in org.all_rxns(":all")[0:10]: # only the first reactions -> debugging
+#for r in org.all_rxns(":metab-all") + org.all_rxns(":transport"): # only metabolic reactions 
+for r in org.all_rxns(":all")[0:10]: # only the first reactions -> debugging
   if str(r) in to_ignore: continue # if reaction is defined to be ignored 
   r_total += 1
   if bigg_names and bigg_reaction_dic.has_key(str(r)):
@@ -75,7 +77,7 @@ for r in org.all_rxns(":metab-all") + org.all_rxns(":transport"): # only metabol
   reaction.upper_bound            = 1000
   reaction.objective_coefficient  = 0
   reaction.add_metabolites(cyc.reaction_meta_stoich(org, r, substitutions))
-  reaction.gene_reaction_rule     = cyc.reaction_gene_reaction_rule(org, r)
+  reaction.gene_reaction_rule     = cyc.reaction_gene_reaction_rule(org, r, gene_names)
 
   #print reaction.print_values()
   #if reaction.check_mass_balance() != []: print reaction, "is not balanced"  # throws error sometimes!

@@ -162,7 +162,7 @@ def reaction_reversible(org, reaction):
     return False
 
 
-def reaction_gene_reaction_rule(org, reaction):
+def reaction_gene_reaction_rule(org, reaction, gene_names_dic):
   """Returns logical link between reaction's involved genes
      and <=> enzyme comples, or <=> isoenzyme"""
   gpr = ""
@@ -173,20 +173,20 @@ def reaction_gene_reaction_rule(org, reaction):
       for enzyme in re_enzymes:
         if org.complex(enzyme) != True: # if it's not a protein complex -> isoenzymes (or)
           if i == 0:
-            gpr   += str(org.genes_of_protein(enzyme))
+            gpr   += change_gene_name(str(org.genes_of_protein(enzyme)), gene_names_dic)
           else:
-            gpr   += " or " + str(org.genes_of_protein(enzyme))
+            gpr   += " or " + change_gene_name(str(org.genes_of_protein(enzyme)), gene_names_dic)
         else: # if it's a protein complex -> no isoenzymes (and)
           complex = org.genes_of_protein(enzyme)
           if hasattr(complex, '__iter__'): # check if iterable
             for subunit in complex:
               if subunit == complex[0]: # first in list -> brackets
                 if i == 0:
-                  gpr   += "(" + str(subunit)
+                  gpr   += "(" + change_gene_name(str(subunit), gene_names_dic)
                 else:
-                  gpr   += " or (" + str(subunit)
+                  gpr   += " or (" + change_gene_name(str(subunit), gene_names_dic)
               else:
-                gpr   += " and " + str(subunit)
+                gpr   += " and " + change_gene_name(str(subunit), gene_names_dic)
               if subunit == complex[len(complex) - 1]: #last in list -> brackets
                 gpr   += ")"
           else: # complex with no subunit (gene not avaible)
@@ -196,7 +196,7 @@ def reaction_gene_reaction_rule(org, reaction):
               gpr   += " or " + "NA"
         i+=1
     else:
-      gpr   = str(org.genes_of_protein(re_enzymes)[0])
+      gpr   = change_gene_name(str(org.genes_of_protein(re_enzymes)[0]), gene_names_dic)
       
   gpr   = re.sub("[\[\]]", "", gpr) # remove [ ] brackets
   #return "("+gpr+")"
@@ -441,3 +441,23 @@ def get_to_ignore_reactions(filename):
       print "to be ignored reaction:", line.rstrip("\n")
       s.add(reaction)
   return s
+
+def get_gene_names_dic(filename):
+  dic = {}
+  file = open(filename, "r")
+  for line in file:
+    if line != "\n" and line.lstrip()[0] != "#":
+      split = line.rstrip("\n").split(" ")
+      if len(split) == 2:
+        ptools_gene_name = split[0]
+        new_gene_name    = split[1]
+        dic[ptools_gene_name] = new_gene_name
+  return dic
+
+def change_gene_name(gene, gene_names_dic):
+  gene2 = re.sub("[\[\]]", "", gene)
+  if gene2 in gene_names_dic:
+    return gene_names_dic[gene2]
+  else:
+     return gene
+  
