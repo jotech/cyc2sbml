@@ -62,8 +62,8 @@ model = Model(answer_org)
 
 #for r in org.all_rxns(":all"): # all reaction
 #for r in [org.get_frame_labeled("DNA-DIRECTED-DNA-POLYMERASE-RXN")[0]]:  # consider only some reaction for testing
-#for r in org.all_rxns(":metab-all") + org.all_rxns(":transport"): # only metabolic reactions 
-for r in org.all_rxns(":all")[0:10]: # only the first reactions -> debugging
+for r in org.all_rxns(":metab-all") + org.all_rxns(":transport"): # only metabolic reactions 
+#for r in org.all_rxns(":all")[0:10]: # only the first reactions -> debugging
   if str(r) in to_ignore: continue # if reaction is defined to be ignored 
   r_total += 1
   if bigg_names and bigg_reaction_dic.has_key(str(r)):
