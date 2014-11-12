@@ -35,7 +35,6 @@ pip install cobra --pre
 ### cyc2sbml
 ```
 git clone https://github.com/jotech/cyc2sbml
-python cyc2sbml.py
 ```
 
 ## Excecution
@@ -44,7 +43,7 @@ Make sure that [Pathway Tools](http://brg.ai.sri.com/ptools/) is running in API 
 ```
 ./pathway-tools -lisp -api
 ```
-Start cyc2sbml 
+Start cyc2sbml (no parameters needed, all important decisions will clarified interactively)
 ```
 python cyc2sbml.py
 ```
