@@ -1,5 +1,4 @@
 # cyc2sbml
-========
 
 Converting [Pathway Tools](http://brg.ai.sri.com/ptools/) database to Systems Biology Markup Language [SBML](http://sbml.org/).
 
@@ -10,11 +9,9 @@ This program reads out an organism's database from pathwaytools (e.g. metacyc) a
 
 ## Features
 - Handling of generic metabolites
-- Define substitutions (metabolites which should
+- Define substitutions (metabolites which should)
 - Add diffusion reactions
 - Change IDs of metabolites and ractions (e.g. according to BIGG nomenclature)
--  
-
 
 
 ## Installation
