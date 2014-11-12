@@ -26,6 +26,11 @@ p_generic_set = {} # dictionary of ignored pathways and how much ignored generic
 r_generic = 0 # count generic reactions
 r_total   = 0 # count reactions
 
+
+#
+# I. input
+#
+
 print pycyc.all_orgs()
 
 answer_org  = raw_input("Which Organism shoulb be exportet to sbml? ")
@@ -38,21 +43,33 @@ if care_generics:
   answer_exceptions = raw_input("\nAre some metabolites (./conf/exceptions.txt) to be kept even if they are generic metabolites? This could be usefull e.g. to summarize lipid metabolism.\n [y/n] ")
   generic_exceptions = cyc.read_generic_exceptions("./conf/exceptions.txt") if answer_exceptions == "y" else []
 else: generic_exceptions = []
+
 answer_substitutions = raw_input("\nSubstitutions defined in ./conf/substitutions.txt could be read and applied to exchange certain metabolites in pathwaytools database. Is this to be done? [y/n] ")
 substitutions = cyc.substitutions_dic("./conf/substitutions.txt") if answer_substitutions == "y" else {}
+
 answer_diffusion = raw_input("\nShould a exchange reaction for membrane permeable substances (defined in ./conf/diffusion.txt) be added automatically to the model? [y/n] ")
 if answer_diffusion == "y":
   diffusion_reactions_list = cyc.get_diffusion_reactions(org, "./conf/diffusion.txt")
   diffusion_reactions = True
 else: diffusion_reactions = False
+
 answer_bigg_names = raw_input("\nDo you want to use bigg reaction names? [y/n] ")
 bigg_names = True if answer_bigg_names == "y" else False
 if bigg_names: bigg_reaction_dic = cyc.get_bigg_reaction_dic("./conf/metacyc_bigg.txt")
+
+answer_bigg_names_metabolites = raw_input("\nDo you want to use bigg metabolite names? [y/n] ")
+bigg_names_metabolites = True if answer_bigg_names_metabolites == "y" else False
+metabolites_dic = cyc.get_bigg_metabolites_dic("./conf/metacyc_bigg_substances.txt") if bigg_names_metabolites else {}
+
 answer_ignore = raw_input("\nShould some reactions defined in ./conf/ignore.txt be ignored? [y/n] ")
 to_ignore = cyc.get_to_ignore_reactions("./conf/ignore.txt") if answer_ignore == "y" else set()
+
 answer_gene_names = raw_input("\nDo you want to use different gene names (locus tags) as used in ptools? .conf/gene_names.txt [y/n] ")
 gene_names = cyc.get_gene_names_dic("./conf/gene_names_dict.txt") if answer_gene_names == "y" else {}
 
+#
+# II. making of
+#
 
 answer_start = raw_input("\n---\nReady to start? [y/n] ")
 if not answer_start == "y": quit()
@@ -104,6 +121,12 @@ for r in org.all_rxns(":metab-all") + org.all_rxns(":transport"): # only metabol
     model.add_reaction(reaction)
 
 if diffusion_reactions: model.add_reactions(diffusion_reactions_list) # adding automatically additional diffusion reactions
+
+if bigg_names_metabolites: model = cyc.change_metabolite_names(model, metabolites_dic)
+
+#
+# III. output
+# 
 
 for r in model.reactions: 
   if r.check_mass_balance() != []: 

@@ -442,6 +442,7 @@ def get_to_ignore_reactions(filename):
       s.add(reaction)
   return s
 
+
 def get_gene_names_dic(filename):
   dic = {}
   file = open(filename, "r")
@@ -454,10 +455,38 @@ def get_gene_names_dic(filename):
         dic[ptools_gene_name] = new_gene_name
   return dic
 
+
 def change_gene_name(gene, gene_names_dic):
   gene2 = re.sub("[\[\]]", "", gene)
   if gene2 in gene_names_dic:
     return gene_names_dic[gene2]
   else:
      return gene
-  
+
+
+def get_bigg_metabolites_dic(filename):
+  dic = {}
+  file = open(filename, "r")
+  for line in file:
+    if line != "\n" and line.lstrip()[0] != "#":
+      split = line.rstrip("\n").split("\t")
+      if len(split) == 2:
+        ptools_metabolite_name = split[0]
+        new_metabolite_name    = split[1]
+        dic[id_cleaner(ptools_metabolite_name)] = new_metabolite_name
+  return dic
+
+
+def change_metabolite_names(model, metabolites_dic):
+  for m in model.metabolites:
+    split = m.id.split("_")
+    compartment = split[1]
+    id = split[0]
+    search = metabolites_dic.get(id, "")
+    if search != "":
+      new_id = search + "_" + compartment
+      m.id = search + "_" + compartment 
+      print id, "changed name to", new_id
+    else:
+      print id, "no bigg name found for metabolite"
+  return model
