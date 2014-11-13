@@ -37,7 +37,7 @@ pip install cobra --pre
 git clone https://github.com/jotech/cyc2sbml
 ```
 
-## Excecution
+## Start
 
 Make sure that [Pathway Tools](http://brg.ai.sri.com/ptools/) is running in API mode:
 ```
