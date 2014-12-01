@@ -37,6 +37,9 @@ answer_org  = raw_input("Which Organism shoulb be exportet to sbml? ")
 org         = pycyc.open(answer_org)
 print "Loading", answer_org, "with", len(org.all_rxns(":all")), "reactions"
 
+formula_dic = cyc.get_formula("./conf/formula.txt") # dictionary additional chemical formula for compounds 
+ec_dic = cyc.get_ec_dic("db/ec-names_brenda.txt") # dictionary with ec numbers and reaction names
+
 answer_generic = raw_input("\nDo you want to take care of generic metabolites (e.g. tRNA, carboxylates)?\n All subclasses of a generic metabolite will be searched for instances (that is specific metabolites) and specific reactions (could be much more!) will be added instead of the generic one\n [y/n] ")
 care_generics = True if answer_generic == "y" else False
 if care_generics:
@@ -47,12 +50,6 @@ else: generic_exceptions = []
 answer_substitutions = raw_input("\nSubstitutions defined in ./conf/substitutions.txt could be read and applied to exchange certain metabolites in pathwaytools database. Is this to be done? [y/n] ")
 substitutions = cyc.substitutions_dic("./conf/substitutions.txt") if answer_substitutions == "y" else {}
 
-answer_diffusion = raw_input("\nShould a exchange reaction for membrane permeable substances (defined in ./conf/diffusion.txt) be added automatically to the model? [y/n] ")
-if answer_diffusion == "y":
-  diffusion_reactions_list = cyc.get_diffusion_reactions(org, "./conf/diffusion.txt")
-  diffusion_reactions = True
-else: diffusion_reactions = False
-
 answer_bigg_names = raw_input("\nDo you want to use bigg reaction names? [y/n] ")
 bigg_names = True if answer_bigg_names == "y" else False
 if bigg_names: bigg_reaction_dic = cyc.get_bigg_reaction_dic("./conf/metacyc_bigg.txt")
@@ -61,11 +58,18 @@ answer_bigg_names_metabolites = raw_input("\nDo you want to use bigg metabolite 
 bigg_names_metabolites = True if answer_bigg_names_metabolites == "y" else False
 metabolites_dic = cyc.get_bigg_metabolites_dic("./conf/metacyc_bigg_substances.txt") if bigg_names_metabolites else {}
 
+answer_diffusion = raw_input("\nShould a exchange reaction for membrane permeable substances (defined in ./conf/diffusion.txt) be added automatically to the model? [y/n] ")
+if answer_diffusion == "y":
+  diffusion_reactions_list = cyc.get_diffusion_reactions(org, "./conf/diffusion.txt", metabolites_dic, formula_dic)
+  diffusion_reactions = True
+else: diffusion_reactions = False
+
 answer_ignore = raw_input("\nShould some reactions defined in ./conf/ignore.txt be ignored? [y/n] ")
 to_ignore = cyc.get_to_ignore_reactions("./conf/ignore.txt") if answer_ignore == "y" else set()
 
 answer_gene_names = raw_input("\nDo you want to use different gene names (locus tags) as used in ptools? .conf/gene_names.txt [y/n] ")
 gene_names = cyc.get_gene_names_dic("./conf/gene_names_dict.txt") if answer_gene_names == "y" else {}
+
 
 #
 # II. making of
@@ -78,7 +82,7 @@ else: print "\n\n"
 model = Model(answer_org)
 
 #for r in org.all_rxns(":all"): # all reaction
-#for r in [org.get_frame_labeled("DNA-DIRECTED-DNA-POLYMERASE-RXN")[0]]:  # consider only some reaction for testing
+#for r in [org.get_frame_labeled("PYRUFLAVREDUCT-RXN")[0]]:  # consider only some reaction for testing
 for r in org.all_rxns(":metab-all") + org.all_rxns(":transport"): # only metabolic reactions 
 #for r in org.all_rxns(":all")[0:10]: # only the first reactions -> debugging
   if str(r) in to_ignore: continue # if reaction is defined to be ignored 
@@ -88,12 +92,12 @@ for r in org.all_rxns(":metab-all") + org.all_rxns(":transport"): # only metabol
   else:
     reaction                      = Reaction(cyc.id_cleaner(str(r)))
   if reaction.id == "": reaction.id = r.ec_number
-  reaction.name                   = cyc.reaction_name(org, r) + " " + str(r.ec_number)
+  reaction.name                   = cyc.reaction_name(org, r, ec_dic) + " " + str(r.ec_number)
   reaction.subsystem              = cyc.reaction_subsystem(org, r)
   reaction.lower_bound            = -1000 if cyc.reaction_reversible(org, r) else 0
   reaction.upper_bound            = 1000
   reaction.objective_coefficient  = 0
-  reaction.add_metabolites(cyc.reaction_meta_stoich(org, r, substitutions))
+  reaction.add_metabolites(cyc.reaction_meta_stoich(org, r, substitutions, formula_dic))
   reaction.gene_reaction_rule     = cyc.reaction_gene_reaction_rule(org, r, gene_names)
 
   #print reaction.print_values()
@@ -101,7 +105,7 @@ for r in org.all_rxns(":metab-all") + org.all_rxns(":transport"): # only metabol
 
   if care_generics and cyc.reaction_is_generic(org, r, generic_exceptions, substitutions):
     r_generic += 1
-    specific_reactions = cyc.reaction_generic_specified(org, r, reaction, generic_exceptions, substitutions, cyc.get_generic_assignment("./conf/generic_assignment.txt"))
+    specific_reactions = cyc.reaction_generic_specified(org, r, reaction, generic_exceptions, substitutions, cyc.get_generic_assignment("./conf/generic_assignment.txt"), formula_dic)
     model.add_reactions(specific_reactions)
     #print "\nabstract reaction:", str(r), reaction.reaction, "\n\tadded", len(specific_reactions), "specific reactions"
     print "\nabstract reaction:", str(r),"\n\tadded", len(specific_reactions), "specific reactions"
@@ -128,8 +132,10 @@ if bigg_names_metabolites: model = cyc.change_metabolite_names(model, metabolite
 # III. output
 # 
 
+print "\n check reaction mass balance"
 for r in model.reactions: 
-  if r.check_mass_balance() != []: 
+  if r.check_mass_balance() != [] and r.id[:3] != "EX_": 
+    print "\t", r, "is not balanced!" 
     print >>mass_balance, r.id, r.name, r.check_mass_balance()
 
 for pwy in p_ignored_set: 

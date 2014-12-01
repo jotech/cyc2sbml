@@ -230,7 +230,7 @@ CPD0-2120	td2coa
 CPD0-2121	hx2coa
 ARACHIDONIC_ACID	arachd
 GLUTATHIONYLSPERMIDINE	gtspmd
-L-glutamyl-tRNAGln	glutrna(gln)
+L-glutamyl-tRNAGln	glutrna-gln
 TRYPTAMINE	trypta
 UDP-MANNACA	uacmamu
 CPD-67	2pglyc
@@ -294,10 +294,10 @@ TOLUENE	tol
 PYRIDOXAL_PHOSPHATE	pydx5p
 GLUTARYL-COA	glutcoa
 FORMYL-GLU	Nforglu
-OH	h2o
+OH	oh
 5-P-BETA-D-RIBOSYL-AMINE	pram
 ISO-PROPANOL	2ppoh
-CPD-15028	no3
+CPD-15028	hno3
 S-ACETYLDIHYDROLIPOAMIDE	adhlam
 L-ASCORBATE-6-PHOSPHATE	ascb6p
 C55-PP-GLCNAC-MANNACA-FUC4NAC	unagamuf
@@ -318,7 +318,7 @@ CPD-479	2kmb
 AQUACOBIIIALAMIN	aqcobal
 4-IMIDAZOLONE-5-PROPIONATE	4izp
 DCTP	dctp
-AMMONIUM	nh3
+AMMONIUM	nh4
 CPD-10204	hmfurn
 PYRIDOXAMINE	pydam
 HEXANOYL-COA	hxcoa
@@ -577,7 +577,7 @@ CPD-7836	ttdca
 CPD-7830	hpdca
 CPD-7832	hexc
 PHENYL-PYRUVATE	phpyr
-CPD-12377	h2o
+CPD-12377	oh
 CPD-10280	ttccoa
 CPD-10284	3otdcoa
 UDP	udp
@@ -633,7 +633,7 @@ CPD0-2217	cpg180
 CPD0-2218	cpe180
 CPD0-2219	gfgaragund
 CPD-558	pmcoa
-CO3	h2co3
+CO3	co3
 3-oxo-palmitoyl-ACPs	3opalmACP
 CPD-11552	42A3HP24DB
 CPD-1063	5mdru1p
@@ -645,9 +645,10 @@ DTDP-DEOH-DEOXY-MANNOSE	dtdp4d6dm
 UDP-D-XYLOSE	udpxyl
 Charged-ASP-tRNAs	asptrna
 LYS	lys-L
-L-seryl-SEC-tRNAs	sertrna(sec)
+L-seryl-SEC-tRNAs	sertrna-sec
 NICOTINATE_NUCLEOTIDE	nicrnt
-Cytochromes-C-Reduced	focytC
+Cytochromes-C-Reduced	cytCrd
+Cytochromes-C-Oxidized	cytCox
 CPD-9865	2dp6mep
 BILIRUBIN-BISGLUCURONOSIDE	bildglcur
 CPD3DJ-11366	sphs1p
@@ -674,7 +675,7 @@ CPD-689	co2dam
 D-6-P-GLUCONO-DELTA-LACTONE	6pgl
 STEARIC_ACID	ocdca
 CPD0-2162	1agpg160
-RIBOSE	rib-D
+RIBOSE	rib
 D-GALACTURONATE	galur
 MALONYL-COA	malcoa
 CPD0-2277	murein3px3p
@@ -826,7 +827,7 @@ CPD-9958	q10h2
 ADENINE	ade
 Charged-GLT-tRNAs	glutrna
 CYTIDINE	cytd
-CPD-7628	mfr(b)
+CPD-7628	mfr-b
 CPD-308	nop
 CPD-309	octp
 CPD-301	Rh3cit
@@ -1075,7 +1076,7 @@ HSCN	tcynt
 CPD-11619	Lpipecol
 HOMO-CYS	hcys-L
 HCN	cyan
-HCL	cl
+HCL	hcl
 TAURINE	taur
 3-ENOLPYRUVYL-SHIKIMATE-5P	3psme
 4-METHYLPENTANAL	4mptnl
@@ -1673,7 +1674,11 @@ HCO3	hco3
 UMP	ump
 CMPKDO	cmpkdo
 KDO	kdo
-SER	ser_DASH_L
+SER	ser-L
 TETRACHLOROETHENE	pce
 TRICHLOROETHENE	tce
 DICHLOROETHENE	dce
+PROTOHEME	pheme
+L-ORNITHINE	orn
+THREO-DS-ISO-CITRATE	icit
+Myristoyl-ACPs	myrsACP

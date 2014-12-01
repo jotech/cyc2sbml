@@ -22,3 +22,4 @@ Red-Glutaredoxins:GLUTATHIONE
 Ox-Glutaredoxins:OXIDIZED-GLUTATHIONE
 #
 Long-Chain-Acyl-CoAs:ACETYL-COA
+CPD-12377:OH

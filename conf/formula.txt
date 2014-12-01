@@ -1,0 +1,31 @@
+## define formulas for metabolites
+# (if pathwaytools database does not have a formula this
+#  one will be taken)
+# ID<tab>formula
+#
+# reducing equivalent
+Red-Thioredoxin	XH2
+Ox-Thioredoxin	X
+#
+# fatty acid
+ACP	C11H21N2O7PRS
+ACYL-ACP	C11H21N2O7PRS
+act-ACP	C15H25N2O9PRS
+MALONYL-ACP	C14H22N2O10PRS
+Acetoacetyl-ACPs	C15H25N2O9PRS
+Myristoyl-ACPs	C25H47N2O8PRS
+STEARIC_ACID	C29H55N2O8PRS
+Stearoyl-ACPs	C29H55N2O8PRS
+#
+# pathwaytools uses CL for Cl
+# which is recognized as C1L1
+TETRACHLOROETHENE	C2Cl4
+TRICHLOROETHENE	C2HCl3
+DICHLOROETHENE	C2H2Cl2
+CL-	Cl
+#
+# trna
+Charged-ASN-tRNAs	C14H24N2O12PR2
+Charged-HIS-tRNAs	C6H8N3OR
+L-methionyl-tRNAfmet	C5H10NOSR
+Charged-LEU-tRNAs	C6H12NOR

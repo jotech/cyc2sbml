@@ -11,9 +11,14 @@ def test():
   print "hello"
 
 
-def reaction_name(org, reaction):
+def reaction_name(org, reaction, ec_dic):
   """Returns the full name of a reaction"""
-  name = reaction.common_name
+  ec = reaction.ec_number
+  if str(ec) != "" and ec != None:
+      name = ec_dic.get(str(ec)[3:], None)
+      #print "name found for", ec, ": ", name
+  else:
+    name = reaction.common_name
   if name == None: name = reaction.systematic_name
   if name == None:
     enzyme = reaction.enzymatic_reaction
@@ -39,7 +44,7 @@ def no_style(string):
   """Get rid of annoying metacyc style in strings"""
   string = re.sub("/","",string)
   string = string.replace("<sub>", "").replace("<SUB>", "").replace("<sup>", "").replace("<SUP>", "")
-  string = string.replace("<i>", "").replace("<SUB>", "").replace("<sup>", "").replace("<SUP>", "")
+  string = string.replace("<i>", "").replace("&apos;","").replace("beta;","beta").replace("&amp;","")
   return string
 
 
@@ -73,16 +78,19 @@ def metabolite_name(org, metabolite):
   return no_style(org.get_name_string(metabolite))
 
 
-def metabolite_formula(org, metabolite):
-  if "CHEMICAL-FORMULA" in metabolite.keys():
+def metabolite_formula(org, metabolite, formula_dic):
+  name = str(metabolite).replace("|","")
+  if name in formula_dic:
+    return formula_dic[name]
+  elif "CHEMICAL-FORMULA" in metabolite.keys():
     formula = str(metabolite.chemical_formula)
     if formula == "None": 
-      formula=""
+      formula="X" # if nothing is known -> X
     else: 
       formula = formula.replace("[","").replace("]","").replace("'","").replace(", ","")
     return formula
   else: 
-    return ""
+    return "X"
 
 
 def metabolite_compartment(org, reaction, metabolite, side):
@@ -110,7 +118,7 @@ def is_number(s):
     return False
 
 
-def reaction_meta_stoich(org, reaction, substitutions):
+def reaction_meta_stoich(org, reaction, substitutions, formula_dic):
   """Anlayses a given reaction and returns its metabolites with stoichiometry"""
   meta_stoich_dic = {}
   if reaction.reaction_direction == "RIGHT-TO-LEFT" or reaction.reaction_direction ==  "PHYSIOL-RIGHT-TO-LEFT": # Attention: pathwaytools considers reactions  of the type "B <- A" confusingly (B is reactant and A is product!!)
@@ -128,7 +136,7 @@ def reaction_meta_stoich(org, reaction, substitutions):
     stoich = org.get_value_annot(reaction, side1, reactant, "coefficient") # stoichiometry
     if stoich == None: stoich = 1 # None <=> 1
     compartment = metabolite_compartment(org, reaction, reactant, "left")
-    formula = metabolite_formula(org, reactant)
+    formula = metabolite_formula(org, reactant, formula_dic)
     name = metabolite_name(org, reactant)
     abbr = id_cleaner(str(reactant)+"_"+compartment)
     metabolite = Metabolite(abbr, formula, name, compartment)
@@ -141,7 +149,7 @@ def reaction_meta_stoich(org, reaction, substitutions):
     stoich = org.get_value_annot(reaction, side2, product, "coefficient") # stoichiometry
     if stoich == None: stoich = 1 # None <=> 1
     compartment = metabolite_compartment(org, reaction, product, "right")
-    formula = metabolite_formula(org, product)
+    formula = metabolite_formula(org, product, formula_dic)
     name = metabolite_name(org, product)
     abbr = id_cleaner(str(product)+"_"+compartment)
     metabolite = Metabolite(abbr, formula, name, compartment)
@@ -263,13 +271,13 @@ def metabolite_from_string(setlistdic, string):
   return None
 
 
-def reaction_generic_specified(org, reaction, org_reaction, generic_exceptions, substitutions, generic_assignment):
+def reaction_generic_specified(org, reaction, org_reaction, generic_exceptions, substitutions, generic_assignment, formula_dic):
   specified_reactions     = []  # list of new specified reactions
   all_metabolites         = org.reaction_reactants_and_products(reaction)[0] + org.reaction_reactants_and_products(reaction)[1]
   generics_substitutions  = {}  # dictionary which contains a list with specific metabolites for each generic one
   list_generics           = []  # list of generic metabolite 
   multilist_specifics     = []  # list containing a list for every generic metabolite containing its specific metabolites
-  meta_stoich             = reaction_meta_stoich(org, reaction, substitutions)
+  meta_stoich             = reaction_meta_stoich(org, reaction, substitutions, formula_dic)
   for metabolite in all_metabolites:
     if str(metabolite).replace("|","") in substitutions.keys(): metabolite = org.get_frame_labeled(substitutions[str(metabolite).replace("|","")])[0] # get substitution of a metabolite if avaible
     if org.is_class(metabolite) and id_cleaner(str(metabolite)) not in list_generics and id_cleaner(str(metabolite)) not in generic_exceptions:
@@ -326,8 +334,8 @@ def reaction_generic_specified(org, reaction, org_reaction, generic_exceptions, 
           #specific_metabolite.id  = specific_metabolite.id.replace(str(generic).replace("|",""), str(specific))
           specific_metabolite.id  = specific_metabolite.id.replace(generic, id_cleaner(str(specific)))
           specific_metabolite.name= metabolite_name(org, specific)
-          specific_metabolite.formula = Formula(metabolite_formula(org, specific))
-          if specific_metabolite.formula == "": specific_metabolite.formula=Formula("H")
+          specific_metabolite.formula = Formula(metabolite_formula(org, specific, formula_dic))
+          if str(specific_metabolite.formula) == "": specific_metabolite.formula=Formula("X") # if no formula is available -> take X
           new_meta_stoich[specific_metabolite] = meta_stoich[entry]
         elif entry.id[:entry.id.find("_")] not in list_generics:
           new_meta_stoich[entry] = meta_stoich[entry]
@@ -372,7 +380,7 @@ def substitutions_dic(filename):
   return dic
 
 
-def get_diffusion_reactions(org, filename):
+def get_diffusion_reactions(org, filename, metabolites_dic, formula_dic):
   """returns a list of diffusion reaction read from file"""
   reaction_list = []
   file = open(filename, "r")
@@ -384,11 +392,13 @@ def get_diffusion_reactions(org, filename):
         substance  = split[1]
         print "added diffusion reaction for", substance, "into", compartment 
         metacyc_metabolite = org.get_frame_labeled(substance)[0]
-        formula = metabolite_formula(org, metacyc_metabolite)
+        formula = metabolite_formula(org, metacyc_metabolite, formula_dic)
         name = metabolite_name(org, metacyc_metabolite)
+        name = metabolites_dic.get(id_cleaner(substance), name) # try to get bigg ids
         abbr = id_cleaner(str(metacyc_metabolite)+"_"+compartment)
         metabolite = Metabolite(abbr, formula, name, compartment)
-        reaction = Reaction("EX_"+str(metabolite))
+        reaction = Reaction("EX_"+name)
+        #reaction.name = "Diffusion of " + id_cleaner(str(metacyc_metabolite))
         reaction.name = "Diffusion of " + name
         reaction.lower_bound  = -1000 
         reaction.upper_bound  = 1000
@@ -478,15 +488,45 @@ def get_bigg_metabolites_dic(filename):
 
 
 def change_metabolite_names(model, metabolites_dic):
+  print "\n try to find unique BIGG ids for all metabolites..."
+  safe = set()
   for m in model.metabolites:
-    split = m.id.split("_")
+    split = m.id.rsplit("_", 1)
     compartment = split[1]
     id = split[0]
     search = metabolites_dic.get(id, "")
-    if search != "":
-      new_id = search + "_" + compartment
-      m.id = search + "_" + compartment 
-      print id, "changed name to", new_id
+    new_id = search + "_" + compartment
+    if search  != "" and new_id not in safe:
+      m.id = new_id
+      safe.add(new_id)
+      #print id, "changed name to", new_id
     else:
-      print id, "no bigg name found for metabolite"
+      print "\t", id, "no unique bigg name found for this metabolite"
+    if m.id.strip() == "": print "WARNING"
   return model
+
+def get_ec_dic(filename):
+  dic = {}
+  file = open(filename, "r")
+  for line in file:
+    if line != "\n" and line.lstrip()[0] != "#":
+      split = line.rstrip("\n").split("\t")
+      if len(split) == 2:
+        ec_nr = split[0]
+        reaction_name    = split[1]
+        dic[ec_nr] = reaction_name
+  return dic
+
+def get_formula(filename):
+  dic = {}
+  file = open(filename, "r")
+  for line in file:
+    if line != "\n" and line.lstrip()[0] != "#":
+      split = line.rstrip("\n").split("\t")
+      if len(split) == 2:
+        metabolite = split[0]
+        formula    = split[1]
+        dic[metabolite] = formula
+  print dic
+  return dic
+

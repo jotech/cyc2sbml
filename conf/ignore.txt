@@ -1,7 +1,10 @@
-# List of Reaction that are irgnored that is not added
+# List of Reaction that are irgnored (that means: not added)
 DNA-DIRECTED-DNA-POLYMERASE-RXN # DNA polymerase
 RXN-8380 # unspecific sulfur->polysulfide reaction (stoichiometry of n)
 RXN0-6521 # unspecific ribonuclease E (stoichiometry of n)
 3.1.11.2-RXN # exodeoxyribonuclease III (stoichiometry of n)
 3.1.26.12-RXN # ribonuclease E (stoichiometry of n)
 UDPSUGARHYDRO-RXN # udp-sugar+h20->ump+aldose1phosphate+2H (unspecific causing glucose loops)
+FORMYLTHFGLUSYNTH-RXN # unspecific folate biosynthesis (n+1->n reactions)
+FOLYLPOLYGLUTAMATESYNTH-RXN # unspecific folate biosynthesis (n+1->n reactions)
+RXN0-2921 # unspecific folate biosynthesis (n+1->n reactions)
