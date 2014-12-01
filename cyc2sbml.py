@@ -52,11 +52,11 @@ substitutions = cyc.substitutions_dic("./conf/substitutions.txt") if answer_subs
 
 answer_bigg_names = raw_input("\nDo you want to use bigg reaction names? [y/n] ")
 bigg_names = True if answer_bigg_names == "y" else False
-if bigg_names: bigg_reaction_dic = cyc.get_bigg_reaction_dic("./conf/metacyc_bigg.txt")
+if bigg_names: bigg_reaction_dic = cyc.get_bigg_reaction_dic("./db/metacyc_bigg.txt")
 
 answer_bigg_names_metabolites = raw_input("\nDo you want to use bigg metabolite names? [y/n] ")
 bigg_names_metabolites = True if answer_bigg_names_metabolites == "y" else False
-metabolites_dic = cyc.get_bigg_metabolites_dic("./conf/metacyc_bigg_substances.txt") if bigg_names_metabolites else {}
+metabolites_dic = cyc.get_bigg_metabolites_dic("./db/metacyc_bigg_substances.txt") if bigg_names_metabolites else {}
 
 answer_diffusion = raw_input("\nShould a exchange reaction for membrane permeable substances (defined in ./conf/diffusion.txt) be added automatically to the model? [y/n] ")
 if answer_diffusion == "y":
