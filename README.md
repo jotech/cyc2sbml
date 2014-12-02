@@ -19,7 +19,7 @@ This program reads out an organism's database from pathwaytools (e.g. metacyc) a
 
 
 ## Installation
-First you need to install [git](http://git-scm.com/).
+[git](http://git-scm.com/) has to be installed
 
 ### [pycyc](https://github.com/ebogart/PyCyc)
 ```
@@ -45,7 +45,7 @@ Make sure that [Pathway Tools](http://brg.ai.sri.com/ptools/) is running in API 
 ```
 ./pathway-tools -lisp -api
 ```
-Start cyc2sbml (no parameters needed, all important decisions will clarified interactively)
+Start cyc2sbml (no parameters needed, all important decisions will be clarified interactively)
 ```
 python cyc2sbml.py
 ```
