@@ -530,3 +530,25 @@ def get_formula(filename):
   print dic
   return dic
 
+def fix_mass_balance(reaction, model, outputfile):
+  if reaction.check_mass_balance() == []:
+    return True
+  mass_dic = reaction.check_mass_balance()[1] # get mass balance
+  mass = [x for x in mass_dic if mass_dic[x] != 0.0] # get non zero entries
+  #h_c = model.metabolites.get_by_id("PROTON_c")
+  protons = [x for x in reaction.metabolites if str(x.formula)=="H1"]
+  old = reaction.reaction
+  if "H" in mass and len(mass) == 1 and protons != []: # if a h is the problem ...
+    h = protons[0]
+    if mass_dic["H"] < 0: # if there is h missing
+      reaction.add_metabolites({h:abs(mass_dic["H"])})
+    if mass_dic["H"] > 0: # if there is h too much
+      reaction.subtract_metabolites({h:mass_dic["H"]})
+
+  if reaction.check_mass_balance() == []:
+    print >>outputfile, reaction.id, reaction.name
+    print >>outputfile, "\told:", old
+    print >>outputfile, "\tnew:", reaction.reaction
+    return True
+  else:
+    return False

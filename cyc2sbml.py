@@ -133,10 +133,13 @@ if bigg_names_metabolites: model = cyc.change_metabolite_names(model, metabolite
 # 
 
 print "\n check reaction mass balance"
+fixed_mass_balance = open("fixed_mass_balance.txt", "w")
 for r in model.reactions: 
   if r.check_mass_balance() != [] and r.id[:3] != "EX_": 
-    print "\t", r, "is not balanced!" 
-    print >>mass_balance, r.id, r.name, r.check_mass_balance()
+    if not cyc.fix_mass_balance(r, model, fixed_mass_balance):
+      print "\t", r, "is not balanced!" 
+      print >>mass_balance, r.id, r.name, r.check_mass_balance()
+
 
 for pwy in p_ignored_set: 
   print >>p_ignored, pwy, org.get_name_string(pwy), p_ignored_set[pwy]

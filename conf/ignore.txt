@@ -8,3 +8,4 @@ UDPSUGARHYDRO-RXN # udp-sugar+h20->ump+aldose1phosphate+2H (unspecific causing g
 FORMYLTHFGLUSYNTH-RXN # unspecific folate biosynthesis (n+1->n reactions)
 FOLYLPOLYGLUTAMATESYNTH-RXN # unspecific folate biosynthesis (n+1->n reactions)
 RXN0-2921 # unspecific folate biosynthesis (n+1->n reactions)
+RXN-4142  # unspecific aldehyde dehydrogenase, instance reactions exist
