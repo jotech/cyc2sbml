@@ -12,8 +12,10 @@ This program reads out an organism's database from pathwaytools (e.g. metacyc) a
 - Define substitutions (metabolites which should be different in sbml)
 - Add standard diffusion reactions (water, ethanol and small, uncharged <=C3 metabolites can pass the membrane)
 - Change IDs and names of metabolites and reactions (e.g. according to the BIGG nomenclature)
-- Ignore reaction that are not important in the metabolism)
+- Ignore reaction that are not important in the metabolism
 - Change Pathway Tools gene names
+- Additional chemical formula for compunds
+- Autofix mass balance
 
 
 ## Installation
@@ -56,3 +58,4 @@ Settings for all configurations are given and can be switched on/off interactive
 - insert additional generic pairs in ```conf/generic_assignment.txt```
 - a list of metabolites which are included even if they are generic metabolites ```conf/exceptions.txt```
 - give a list of compounds which should be substituted ```conf/substitutions.txt```
+- additional chemical formulas are listed in ``conf/formula.txt``
