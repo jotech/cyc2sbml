@@ -535,20 +535,22 @@ def fix_mass_balance(reaction, model, outputfile):
   mass_dic = reaction.check_mass_balance()[1] # get mass balance
   mass = [x for x in mass_dic if mass_dic[x] != 0.0] # get non zero entries
   #h_c = model.metabolites.get_by_id("PROTON_c")
-  #protons = [x for x in reaction.metabolites if str(x.formula)=="H1"]
-  if "PROTON_c" in model.metabolites:
-    h_in  = model.metabolites.get_by_id("PROTON_c")
+  protons = [x for x in reaction.metabolites if str(x.formula)=="H1"]
+  if protons != []:
+    h = protons[0]
+  elif "PROTON_c" in model.metabolites:
+    h = model.metabolites.get_by_id("PROTON_c")
   else:
-    h_in  = Metabolite(id="PROTON_c", name="proton", formula="H", compartment="c")
+    h = Metabolite(id="PROTON_c", name="proton", formula="H", compartment="c")
   #h_out = model.metabolites.get_by_id("PROTON_p")
   old = reaction.reaction
   # caution! considers only internal missing protons!
-  if "H" in mass and len(mass) == 1: # if a h is the problem ...
-    #h = protons[0]
+  if "H" in mass and len(mass) == 1 and len(protons) == 1: # if a h is the problem ...
+  # i) H should be unbalanced, ii) only H should unbalanced, iii) there should be only one H (case with h_c and h_p cannot be handled yet)
     if mass_dic["H"] < 0: # if there is h missing
-      reaction.add_metabolites({h_in:abs(mass_dic["H"])})
+      reaction.add_metabolites({h:abs(mass_dic["H"])})
     if mass_dic["H"] > 0: # if there is h too much
-      reaction.subtract_metabolites({h_in:mass_dic["H"]})
+      reaction.subtract_metabolites({h:mass_dic["H"]})
   if reaction.check_mass_balance() == []:
     print >>outputfile, reaction.id, reaction.name
     print >>outputfile, "\told:", old

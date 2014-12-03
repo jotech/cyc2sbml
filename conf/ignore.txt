@@ -7,5 +7,9 @@ RXN0-6521 # unspecific ribonuclease E (stoichiometry of n)
 UDPSUGARHYDRO-RXN # udp-sugar+h20->ump+aldose1phosphate+2H (unspecific causing glucose loops)
 FORMYLTHFGLUSYNTH-RXN # unspecific folate biosynthesis (n+1->n reactions)
 FOLYLPOLYGLUTAMATESYNTH-RXN # unspecific folate biosynthesis (n+1->n reactions)
-RXN0-2921 # unspecific folate biosynthesis (n+1->n reactions)
-RXN-4142  # unspecific aldehyde dehydrogenase, instance reactions exist
+RXN0-2921     # unspecific folate biosynthesis (n+1->n reactions)
+RXN-4142      # unspecific aldehyde dehydrogenase, instance reactions exist
+RXN-5513      # unspecific long chain fatty acid acp ligase -> many generic missassignments
+2.4.1.129-RXN # unspecific peptidoglycan glycosyltrtansferase -> many generic misassignments
+RXN-7904      # unspecific fatty acid activation -> many generic missasignments
+RXN-14712     # unspecific peptidoglycan glycosyltransferase -> missasignments

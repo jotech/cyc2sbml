@@ -82,7 +82,7 @@ else: print "\n\n"
 model = Model(answer_org)
 
 #for r in org.all_rxns(":all"): # all reaction
-#for r in [org.get_frame_labeled("PYRUFLAVREDUCT-RXN")[0]]:  # consider only some reaction for testing
+#for r in [org.get_frame_labeled("RXN0-6259")[0]]:  # consider only some reaction for testing
 for r in org.all_rxns(":metab-all") + org.all_rxns(":transport"): # only metabolic reactions 
 #for r in org.all_rxns(":all")[0:10]: # only the first reactions -> debugging
   if str(r) in to_ignore: continue # if reaction is defined to be ignored 
@@ -131,6 +131,7 @@ if bigg_names_metabolites: model = cyc.change_metabolite_names(model, metabolite
 #
 # III. output
 # 
+for i in model.metabolites: print i
 
 print "\n check reaction mass balance"
 fixed_mass_balance = open("fixed_mass_balance.txt", "w")
