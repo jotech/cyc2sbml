@@ -132,8 +132,8 @@ def reaction_meta_stoich(org, reaction, substitutions, formula_dic):
     side1 = "left"
     side2 = "right"
   for reactant in reactants:
-    if id_cleaner(str(reactant)) in substitutions.keys(): reactant = org.get_frame_labeled(substitutions[id_cleaner(str(reactant))])[0] # get substitution of a metabolite if avaible
     stoich = org.get_value_annot(reaction, side1, reactant, "coefficient") # stoichiometry
+    if id_cleaner(str(reactant)) in substitutions.keys(): reactant = org.get_frame_labeled(substitutions[id_cleaner(str(reactant))])[0] # get substitution of a metabolite if avaible
     if stoich == None: stoich = 1 # None <=> 1
     compartment = metabolite_compartment(org, reaction, reactant, "left")
     formula = metabolite_formula(org, reactant, formula_dic)
@@ -145,8 +145,8 @@ def reaction_meta_stoich(org, reaction, substitutions, formula_dic):
     else:
       meta_stoich_dic[metabolite] = stoich
   for product in products:
-    if id_cleaner(str(product)) in substitutions.keys(): product = org.get_frame_labeled(substitutions[id_cleaner(str(product))])[0] # get substitution of a metabolite if avaible
     stoich = org.get_value_annot(reaction, side2, product, "coefficient") # stoichiometry
+    if id_cleaner(str(product)) in substitutions.keys(): product = org.get_frame_labeled(substitutions[id_cleaner(str(product))])[0] # get substitution of a metabolite if avaible
     if stoich == None: stoich = 1 # None <=> 1
     compartment = metabolite_compartment(org, reaction, product, "right")
     formula = metabolite_formula(org, product, formula_dic)
@@ -527,7 +527,6 @@ def get_formula(filename):
         metabolite = split[0]
         formula    = split[1]
         dic[metabolite] = formula
-  print dic
   return dic
 
 def fix_mass_balance(reaction, model, outputfile):
@@ -536,15 +535,20 @@ def fix_mass_balance(reaction, model, outputfile):
   mass_dic = reaction.check_mass_balance()[1] # get mass balance
   mass = [x for x in mass_dic if mass_dic[x] != 0.0] # get non zero entries
   #h_c = model.metabolites.get_by_id("PROTON_c")
-  protons = [x for x in reaction.metabolites if str(x.formula)=="H1"]
+  #protons = [x for x in reaction.metabolites if str(x.formula)=="H1"]
+  if "PROTON_c" in model.metabolites:
+    h_in  = model.metabolites.get_by_id("PROTON_c")
+  else:
+    h_in  = Metabolite(id="PROTON_c", name="proton", formula="H", compartment="c")
+  #h_out = model.metabolites.get_by_id("PROTON_p")
   old = reaction.reaction
-  if "H" in mass and len(mass) == 1 and protons != []: # if a h is the problem ...
-    h = protons[0]
+  # caution! considers only internal missing protons!
+  if "H" in mass and len(mass) == 1: # if a h is the problem ...
+    #h = protons[0]
     if mass_dic["H"] < 0: # if there is h missing
-      reaction.add_metabolites({h:abs(mass_dic["H"])})
+      reaction.add_metabolites({h_in:abs(mass_dic["H"])})
     if mass_dic["H"] > 0: # if there is h too much
-      reaction.subtract_metabolites({h:mass_dic["H"]})
-
+      reaction.subtract_metabolites({h_in:mass_dic["H"]})
   if reaction.check_mass_balance() == []:
     print >>outputfile, reaction.id, reaction.name
     print >>outputfile, "\told:", old
